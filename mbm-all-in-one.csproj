@@ -14,6 +14,7 @@
     </RestoreAdditionalProjectSources>
     <RootNamespace>mbm_all_in_one</RootNamespace>
     <OutputPath>bin/</OutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,15 +28,15 @@
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
   </ItemGroup>
 
-  	<ItemGroup>
-		<!-- Plugin Code -->
-		<Compile Include="/src/*" />
+  <ItemGroup>
+    <!-- Explicitly include source files, excluding .bak files -->
+    <Compile Include="src/**/*.cs" Exclude="src/**/*.bak" />
 
-		<!-- MBM Assembly -->
-		<Reference Include="./reference/Assembly-CSharp.dll">
-			<Private>False</Private>
-		</Reference>
-	</ItemGroup>
+    <!-- MBM Assembly -->
+    <Reference Include="./reference/Assembly-CSharp.dll">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="Build">
     <Exec Command='mv bin/net472/mbm_all_in_one.dll "/home/pawbeans/Downloads/Monster Black Market V2.0.16.0 w DLC w Uncen/BepInEx/scripts/"' />
