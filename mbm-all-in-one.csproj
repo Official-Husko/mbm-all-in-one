@@ -13,6 +13,7 @@
       https://nuget.samboy.dev/v3/index.json
     </RestoreAdditionalProjectSources>
     <RootNamespace>mbm_all_in_one</RootNamespace>
+    <OutputPath>bin/</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,4 +36,8 @@
 			<Private>False</Private>
 		</Reference>
 	</ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="Build">
+    <Exec Command='mv bin/net472/mbm_all_in_one.dll "/home/pawbeans/Downloads/Monster Black Market V2.0.16.0 w DLC w Uncen/BepInEx/scripts/"' />
+  </Target>
 </Project>
