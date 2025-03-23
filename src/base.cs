@@ -16,6 +16,15 @@ namespace mbm_all_in_one.src
 
         private void Awake()
         {
+            // Check if the ModMenuUI component already exists
+            _modMenuUI = gameObject.GetComponent<ModMenuUI>();
+            if (_modMenuUI != null)
+            {
+                // If it exists, destroy it
+                Destroy(_modMenuUI);
+            }
+
+            // Add a new ModMenuUI component
             _modMenuUI = gameObject.AddComponent<ModMenuUI>();
         }
     }
@@ -51,6 +60,8 @@ namespace mbm_all_in_one.src
             Mods
         }
 
+        private string _addGoldAmountText = "0";
+
         private void Start()
         {
             _cheatManager = new CheatManager();
@@ -72,32 +83,23 @@ namespace mbm_all_in_one.src
         {
             if (!_showMenu) return;
 
-            // Apply dark mode GUI style
             GUI.backgroundColor = new Color(0.1f, 0.1f, 0.1f);
-
-            // Draw the IMGUI window
             _menuRect = GUI.Window(0, _menuRect, MenuWindow, "----< Mod Menu >----");
 
-            // Calculate position for version label at bottom left corner
-            float versionLabelX = _menuRect.xMin + 10; // 10 pixels from left edge
-            float versionLabelY = _menuRect.yMax - 20; // 20 pixels from bottom edge
-
             // Draw version label at bottom left corner
-            GUI.contentColor = new Color(0.5f, 0.5f, 0.5f); // Dark grey silver color
-            GUI.Label(new Rect(versionLabelX, versionLabelY, 100, 20), "v" + MyPluginInfo.PLUGIN_VERSION);
+            float versionLabelX = _menuRect.xMin + 10; // 10 pixels from left edge
+            float versionLabelY = _menuRect.yMax - 30; // 30 pixels from bottom edge
+            UIUtils.DrawLabel("v" + MyPluginInfo.PLUGIN_VERSION, new Color(0.5f, 0.5f, 0.5f), new Rect(versionLabelX, versionLabelY, 100, 20));
 
             // Calculate the width of the author label
-            float authorLabelWidth = GUI.skin.label.CalcSize(new GUIContent("by Official-Husko")).x + 10; // Add some extra width for padding
-
-            // Calculate position for author label at bottom right corner
-            float authorLabelX = _menuRect.xMax - authorLabelWidth; // 10 pixels from right edge
-            float authorLabelY = versionLabelY + 2; // Align with version label
+            float authorLabelWidth = GUI.skin.label.CalcSize(new GUIContent("by Official-Husko")).x + 10;
+            float authorLabelX = _menuRect.xMax - authorLabelWidth - 10; // 10 pixels from right edge
+            float authorLabelY = versionLabelY; // Align with version label
 
             // Draw the author label as a clickable label
-            if (GUI.Button(new Rect(authorLabelX, authorLabelY, authorLabelWidth, 20), "<color=cyan>by</color> <color=yellow>Official-Husko</color>", GUIStyle.none))
+            if (UIUtils.DrawButton("<color=cyan>by</color> <color=yellow>Official-Husko</color>", Color.clear, new Rect(authorLabelX, authorLabelY, authorLabelWidth, 20)))
             {
-                // Open a link in the user's browser when the label is clicked
-                Application.OpenURL("https://github.com/Official-Husko/mbm-cheats-menu");
+                Application.OpenURL("https://github.com/Official-Husko/mbm-all-in-one");
             }
         }
 
@@ -142,14 +144,14 @@ namespace mbm_all_in_one.src
             GUILayout.BeginVertical();
 
             GUILayout.Label("Cheats:");
-            if (GUILayout.Button("Add Gold"))
+            CheatDrawer.DrawToggleCheat("Add Gold", "Add Gold", () => _cheatManager.ExecuteCheat("Add Gold"));
+            CheatDrawer.DrawInputCheat("Add Gold Amount", ref _addGoldAmountText, "Execute", () =>
             {
-                _cheatManager.ExecuteCheat("Add Gold");
-            }
-            if (GUILayout.Button("Add Pixy"))
-            {
-                _cheatManager.ExecuteCheat("Add Pixy");
-            }
+                if (int.TryParse(_addGoldAmountText, out int amount) && amount > 0)
+                {
+                    GameManager.Instance.PlayerData.Gold += amount;
+                }
+            });
             // Add more cheat buttons here
 
             GUILayout.EndVertical();
