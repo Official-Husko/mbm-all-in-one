@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using BepInEx;
 using MBMScripts;
 using UnityEngine;
 using mbm_all_in_one.src.modules.cheats; // Updated namespace
-using mbm_all_in_one.src.modules.utils; // Updated namespace
+using mbm_all_in_one.src.modules.utils;
+using System.Runtime.InteropServices; // Updated namespace
 
 namespace mbm_all_in_one.src
 {
@@ -39,10 +41,15 @@ namespace mbm_all_in_one.src
             _cheats.Add(cheat);
         }
 
-        public void ExecuteCheat(string name)
+        public IEnumerable<ICheat> GetCheats()
+        {
+            return _cheats;
+        }
+
+        public void ExecuteCheat(string name, int amount)
         {
             var cheat = _cheats.FirstOrDefault(c => c.Name == name);
-            cheat?.Execute();
+            cheat?.Execute(amount);
         }
     }
 
@@ -60,14 +67,27 @@ namespace mbm_all_in_one.src
             Mods
         }
 
-        private string _addGoldAmountText = "0";
+        private Dictionary<string, string> _cheatAmountTexts = new Dictionary<string, string>();
+
+        private readonly int LabelWidth = 250;
+        private readonly int ButtonWidth = 100;
 
         private void Start()
         {
             _cheatManager = new CheatManager();
-            _cheatManager.RegisterCheat(new AddGoldCheat());
-            _cheatManager.RegisterCheat(new AddPixyCheat());
-            // Register other cheats
+            RegisterAllCheats();
+        }
+
+        private void RegisterAllCheats()
+        {
+            var cheatTypes = Assembly.GetExecutingAssembly().GetTypes()
+                .Where(t => typeof(IRegisterableCheat).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+
+            foreach (var type in cheatTypes)
+            {
+                var cheat = (IRegisterableCheat)Activator.CreateInstance(type);
+                cheat.Register(_cheatManager);
+            }
         }
 
         private void Update()
@@ -143,16 +163,61 @@ namespace mbm_all_in_one.src
         {
             GUILayout.BeginVertical();
 
-            GUILayout.Label("Cheats:");
-            CheatDrawer.DrawToggleCheat("Add Gold", "Add Gold", () => _cheatManager.ExecuteCheat("Add Gold"));
-            CheatDrawer.DrawInputCheat("Add Gold Amount", ref _addGoldAmountText, "Execute", () =>
+            foreach (var cheat in _cheatManager.GetCheats())
             {
-                if (int.TryParse(_addGoldAmountText, out int amount) && amount > 0)
+                string cheatName = cheat.Name;
+
+                if (!_cheatAmountTexts.ContainsKey(cheatName))
                 {
-                    GameManager.Instance.PlayerData.Gold += amount;
+                    _cheatAmountTexts[cheatName] = "0";
                 }
-            });
-            // Add more cheat buttons here
+
+                string inputText = _cheatAmountTexts[cheatName];
+
+                GUILayout.BeginHorizontal();
+                switch (cheat.Type)
+                {
+                    case CheatType.Toggle:
+                        DotUtils.DrawRedDot(); // or DrawGreenDot based on state
+                        GUILayout.Label($"Toggle {cheatName}", GUILayout.Width(LabelWidth)); // Fixed width for label
+                        if (GUILayout.Button("Toggle", GUILayout.Width(ButtonWidth))) // Fixed width for button
+                        {
+                            // Toggle logic here
+                        }
+                        break;
+
+                    case CheatType.ExecuteWithInput:
+                        DotUtils.DrawVioletDot();
+                        GUILayout.Label($"Add {cheatName} Amount", GUILayout.Width(LabelWidth)); // Fixed width for label
+                        inputText = GUILayout.TextField(inputText, GUILayout.Width(40)); // Fixed width for input
+                        if (GUILayout.Button("Execute", GUILayout.Width(ButtonWidth)) && int.TryParse(inputText, out int amount) && amount > 0) // Fixed width for button
+                        {
+                            cheat.Execute(amount);
+                        }
+                        break;
+
+                    case CheatType.Execute:
+                        DotUtils.DrawBlueDot();
+                        GUILayout.Label($"Execute {cheatName}", GUILayout.Width(LabelWidth)); // Fixed width for label
+                        if (GUILayout.Button("Execute", GUILayout.Width(ButtonWidth))) // Fixed width for button
+                        {
+                            cheat.Execute(0);
+                        }
+                        break;
+
+                    case CheatType.ListExecute:
+                        DotUtils.DrawYellowDot();
+                        GUILayout.Label($"List Execute {cheatName}", GUILayout.Width(LabelWidth)); // Fixed width for label
+                        if (GUILayout.Button("List Execute", GUILayout.Width(ButtonWidth))) // Fixed width for button
+                        {
+                            // List execute logic here
+                        }
+                        break;
+                }
+                GUILayout.EndHorizontal();
+
+                _cheatAmountTexts[cheatName] = inputText;
+            }
 
             GUILayout.EndVertical();
         }
@@ -161,7 +226,7 @@ namespace mbm_all_in_one.src
         {
             GUILayout.BeginVertical();
 
-            GUILayout.Label("Mods:");
+            GUILayout.Label("Enabling and disabling mods requires a restart of the game!");
             // Add mod-related UI elements here
 
             GUILayout.EndVertical();

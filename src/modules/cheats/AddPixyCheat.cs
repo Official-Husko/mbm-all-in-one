@@ -4,14 +4,20 @@ using mbm_all_in_one.src.modules.utils;
 
 namespace mbm_all_in_one.src.modules.cheats
 {
-    public class AddPixyCheat : ICheat
+    public class AddPixyCheat : ICheat, IRegisterableCheat
     {
-        public string Name => "Add Pixy";
+        public string Name => "Pixy";
+        public CheatType Type => CheatType.ExecuteWithInput;
 
-        public void Execute()
+        public void Execute(int amount)
         {
             // Logic to add pixy
-            GameManager.Instance.PlayerData.FloraPixyCount += 100;
+            GameManager.Instance.PlayerData.FloraPixyCount += amount;
+        }
+
+        public void Register(CheatManager cheatManager)
+        {
+            cheatManager.RegisterCheat(this);
         }
     }
 } 

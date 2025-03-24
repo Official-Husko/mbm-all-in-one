@@ -25,19 +25,24 @@ namespace mbm_all_in_one.src.modules.utils
             GUILayout.EndHorizontal();
         }
 
-        public static void DrawInputCheat(string label, ref string inputText, string buttonText, Action action)
+        public static void DrawInputCheat(string label, ref string inputText, string buttonText, Action<int> action)
         {
             GUILayout.BeginHorizontal();
             DotUtils.DrawVioletDot();
             GUILayout.Label(label);
             inputText = GUILayout.TextField(inputText, GUILayout.Width(40));
-            if (int.TryParse(inputText, out int amount) && amount > 0)
+
+            // Check if the input is valid
+            bool isValidInput = int.TryParse(inputText, out int amount) && amount > 0;
+
+            // Enable or disable the button based on input validity
+            GUI.enabled = isValidInput;
+            if (GUILayout.Button(buttonText) && isValidInput)
             {
-                if (GUILayout.Button(buttonText))
-                {
-                    action.Invoke();
-                }
+                action.Invoke(amount);
             }
+            GUI.enabled = true; // Re-enable GUI for other elements
+
             GUILayout.EndHorizontal();
         }
     }
