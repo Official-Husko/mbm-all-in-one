@@ -1,0 +1,101 @@
+using System;
+using System.Runtime.CompilerServices;
+using BepInEx;
+using BepInEx.Configuration;
+using BepInEx.Core.Logging.Interpolation;
+using BepInEx.Logging;
+using BepInEx.Unity.Mono;
+using ChaoticMarket.RandomTraitGeneration;
+using MBMModsServices;
+using MBMScripts;
+
+namespace ChaoticMarket
+{
+	// Token: 0x02000006 RID: 6
+	[NullableContext(1)]
+	[Nullable(0)]
+	[BepInPlugin("com.Memacile.ChaoticMarket", "ChaoticMarket", "2.0.0")]
+	[BepInDependency("com.Memacile.SoapBoxHero.MBMModsServices", BepInDependency.DependencyFlags.HardDependency)]
+	public class ChaoticMarketPlugin : BaseUnityPlugin
+	{
+		// Token: 0x06000006 RID: 6 RVA: 0x000020A0 File Offset: 0x000002A0
+		public ChaoticMarketPlugin()
+		{
+			ChaoticMarketPlugin.log = base.Logger;
+			ChaoticMarketPlugin.Enabled = base.Config.Bind<bool>(new ConfigDefinition("General", "Enabled"), true, new ConfigDescription("Enables ChaoticMarket plugin.", null, Array.Empty<object>()));
+		}
+
+		// Token: 0x06000007 RID: 7 RVA: 0x000020EE File Offset: 0x000002EE
+		private static void UpdateRandomTraitGenerator([Nullable(2)] object sender, EventArgs e)
+		{
+			RandomTraitGenerator randomTraitGenerator = ChaoticMarketPlugin.randomTraitGenerator;
+			if (randomTraitGenerator == null)
+			{
+				return;
+			}
+			randomTraitGenerator.UpdateCharacterTypeTraitGenerators();
+		}
+
+		// Token: 0x06000008 RID: 8 RVA: 0x00002100 File Offset: 0x00000300
+		private void Awake()
+		{
+			ManualLogSource manualLogSource = ChaoticMarketPlugin.log;
+			if (manualLogSource != null)
+			{
+				bool flag;
+				BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(11, 1, out flag);
+				if (flag)
+				{
+					bepInExInfoLogInterpolatedStringHandler.AppendFormatted<string>("ChaoticMarket");
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" is loaded.");
+				}
+				manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+			}
+			if (ChaoticMarketPlugin.Enabled.Value)
+			{
+				ChaoticMarketPlugin.randomTraitGenerator = new RandomTraitGenerator(new RandomTraitConfig(base.Config));
+				ConfigFile config = base.Config;
+				EventHandler<SettingChangedEventArgs> eventHandler;
+				if ((eventHandler = ChaoticMarketPlugin.<>O.<0>__UpdateRandomTraitGenerator) == null)
+				{
+					eventHandler = (ChaoticMarketPlugin.<>O.<0>__UpdateRandomTraitGenerator = new EventHandler<SettingChangedEventArgs>(ChaoticMarketPlugin.UpdateRandomTraitGenerator));
+				}
+				config.SettingChanged += eventHandler;
+				CharacterAccessToolMarket.RegisterActionsForFirstCharacters(new Action<Character>(ChaoticMarketPlugin.randomTraitGenerator.GenerateRandomTraits));
+				CharacterAccessToolMarket.RegisterActionsForNewCharacterInMarket(new Action<Character>(ChaoticMarketPlugin.randomTraitGenerator.GenerateRandomTraits));
+			}
+			ManualLogSource manualLogSource2 = ChaoticMarketPlugin.log;
+			if (manualLogSource2 == null)
+			{
+				return;
+			}
+			manualLogSource2.LogMessage("ChaoticMarket is " + (ChaoticMarketPlugin.Enabled.Value ? "enabled" : "disabled") + ".");
+		}
+
+		// Token: 0x04000004 RID: 4
+		public const string AUTHOR = "Memacile";
+
+		// Token: 0x04000005 RID: 5
+		public const string GUID = "com.Memacile.ChaoticMarket";
+
+		// Token: 0x04000006 RID: 6
+		[Nullable(2)]
+		public static ManualLogSource log;
+
+		// Token: 0x04000007 RID: 7
+		public static ConfigEntry<bool> Enabled;
+
+		// Token: 0x04000008 RID: 8
+		[Nullable(2)]
+		public static RandomTraitGenerator randomTraitGenerator;
+
+		// Token: 0x0200000C RID: 12
+		[CompilerGenerated]
+		private static class <>O
+		{
+			// Token: 0x04000017 RID: 23
+			[Nullable(0)]
+			public static EventHandler<SettingChangedEventArgs> <0>__UpdateRandomTraitGenerator;
+		}
+	}
+}

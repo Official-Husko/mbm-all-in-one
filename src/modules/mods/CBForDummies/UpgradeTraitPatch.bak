@@ -1,0 +1,40 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using ComplexBreeding;
+using ComplexBreeding.Essences;
+using HarmonyLib;
+using MBMScripts;
+
+namespace CBforDummies.Patches
+{
+	// Token: 0x02000014 RID: 20
+	[HarmonyPatch(typeof(Character), "UpgradeTrait", new Type[] { })]
+	public class UpgradeTraitPatch
+	{
+		// Token: 0x06000038 RID: 56 RVA: 0x00002CE4 File Offset: 0x00000EE4
+		[NullableContext(1)]
+		public static void Postfix(Character __instance, ref List<ETrait> ___m_TraitList)
+		{
+			Random random = new Random();
+			IEnumerable<ETrait> allEssenceTraits = GameData.EssencesDataList.Select((IEssenceData e) => e.ReplacedTrait);
+			List<ETrait> list = ___m_TraitList.Where((ETrait t) => allEssenceTraits.Contains(t)).ToList<ETrait>();
+			int num = 0;
+			for (int i = 0; i < list.Count; i++)
+			{
+				int num2 = random.Next(0, 4);
+				if (num2 != 0)
+				{
+					num++;
+					__instance.SetTraitUpgradedValue(list[i], (float)num2);
+				}
+			}
+			if (num == 0 && list.Count > 0)
+			{
+				int num3 = random.Next(1, 4);
+				__instance.SetTraitUpgradedValue(list[0], (float)num3);
+			}
+		}
+	}
+}

@@ -1,0 +1,17 @@
+using System;
+using System.Runtime.CompilerServices;
+using BepInEx.Configuration;
+
+namespace MapKeyboardExtended
+{
+	// Token: 0x02000007 RID: 7
+	public static class ConfigExtensions
+	{
+		// Token: 0x06000006 RID: 6 RVA: 0x0000209D File Offset: 0x0000029D
+		[NullableContext(1)]
+		public static ConfigEntry<T> Bind<[Nullable(2)] T>(this ConfigFile cfg, [Nullable(new byte[] { 0, 1 })] ConfigInfo<T> info)
+		{
+			return cfg.Bind<T>(new ConfigDefinition(info.Section, info.Name), info.DefaultValue, new ConfigDescription(info.Description, info.AcceptableValues, Array.Empty<object>()));
+		}
+	}
+}

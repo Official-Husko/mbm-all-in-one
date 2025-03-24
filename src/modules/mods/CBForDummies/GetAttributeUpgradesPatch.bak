@@ -1,0 +1,65 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using ComplexBreeding.Essences;
+using ComplexBreeding.Essences.Data;
+using HarmonyLib;
+using MBMScripts;
+
+namespace CBforDummies.Patches
+{
+	// Token: 0x0200000A RID: 10
+	[NullableContext(1)]
+	[Nullable(0)]
+	[HarmonyPatch]
+	public class GetAttributeUpgradesPatch
+	{
+		// Token: 0x06000017 RID: 23 RVA: 0x000023B4 File Offset: 0x000005B4
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(DemonicEssenceData), "AttributeUpgrades", MethodType.Getter)]
+		public static void Postfix1(ref ICollection<UpgradeAttributeInfo> __result)
+		{
+			__result = CBforDummiesPlugin.EssenceConfig.GetEssenceAttributeInfo(ETrait.Trait93);
+		}
+
+		// Token: 0x06000018 RID: 24 RVA: 0x000023C4 File Offset: 0x000005C4
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(ElementalEssenceData), "AttributeUpgrades", MethodType.Getter)]
+		public static void Postfix2(ref ICollection<UpgradeAttributeInfo> __result)
+		{
+			__result = CBforDummiesPlugin.EssenceConfig.GetEssenceAttributeInfo(ETrait.Trait95);
+		}
+
+		// Token: 0x06000019 RID: 25 RVA: 0x000023D4 File Offset: 0x000005D4
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(EternalEssenceData), "AttributeUpgrades", MethodType.Getter)]
+		public static void Postfix3(ref ICollection<UpgradeAttributeInfo> __result)
+		{
+			__result = CBforDummiesPlugin.EssenceConfig.GetEssenceAttributeInfo(ETrait.Trait96);
+		}
+
+		// Token: 0x0600001A RID: 26 RVA: 0x000023E4 File Offset: 0x000005E4
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(FeralEssenceData), "AttributeUpgrades", MethodType.Getter)]
+		public static void Postfix4(ref ICollection<UpgradeAttributeInfo> __result)
+		{
+			__result = CBforDummiesPlugin.EssenceConfig.GetEssenceAttributeInfo(ETrait.Trait98);
+		}
+
+		// Token: 0x0600001B RID: 27 RVA: 0x000023F4 File Offset: 0x000005F4
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(MagicalEssenceData), "AttributeUpgrades", MethodType.Getter)]
+		public static void Postfix5(ref ICollection<UpgradeAttributeInfo> __result)
+		{
+			__result = CBforDummiesPlugin.EssenceConfig.GetEssenceAttributeInfo(ETrait.Trait97);
+		}
+
+		// Token: 0x0600001C RID: 28 RVA: 0x00002404 File Offset: 0x00000604
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(SacredEssenceData), "AttributeUpgrades", MethodType.Getter)]
+		public static void Postfix6(ref ICollection<UpgradeAttributeInfo> __result)
+		{
+			__result = CBforDummiesPlugin.EssenceConfig.GetEssenceAttributeInfo(ETrait.Trait94);
+		}
+	}
+}

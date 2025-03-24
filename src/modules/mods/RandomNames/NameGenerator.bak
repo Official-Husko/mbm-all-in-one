@@ -1,0 +1,158 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using MBMScripts;
+
+namespace RandomNames
+{
+	// Token: 0x02000006 RID: 6
+	[NullableContext(1)]
+	[Nullable(0)]
+	public class NameGenerator
+	{
+		// Token: 0x06000006 RID: 6 RVA: 0x0000209D File Offset: 0x0000029D
+		public NameGenerator(TakeLastNameFrom takeLastNameFrom, IDictionary<EUnitType, string> pathToNameFiles)
+		{
+			this.TakeLastNameFrom = takeLastNameFrom;
+			this.RandomNumberGenerator = new Random();
+			this.Names = this.LoadNames(pathToNameFiles);
+		}
+
+		// Token: 0x06000007 RID: 7 RVA: 0x000020C4 File Offset: 0x000002C4
+		private IDictionary<EUnitType, List<string>> LoadNames(IDictionary<EUnitType, string> pathToNameFiles)
+		{
+			Dictionary<EUnitType, List<string>> dictionary = new Dictionary<EUnitType, List<string>>();
+			foreach (KeyValuePair<EUnitType, string> keyValuePair in pathToNameFiles)
+			{
+				List<string> list = (from line in File.ReadAllLines(keyValuePair.Value)
+					where !line.StartsWith("#")
+					select line.Trim()).ToList<string>();
+				dictionary.Add(keyValuePair.Key, list);
+			}
+			return dictionary;
+		}
+
+		// Token: 0x06000008 RID: 8 RVA: 0x00002174 File Offset: 0x00000374
+		private List<string> ConvertToList(string[] namesForUnitType)
+		{
+			List<string> list = new List<string>();
+			foreach (string text in namesForUnitType)
+			{
+				list.Add(text);
+			}
+			return list;
+		}
+
+		// Token: 0x06000009 RID: 9 RVA: 0x000021A4 File Offset: 0x000003A4
+		[NullableContext(2)]
+		public void SetNameForNewCharacter([Nullable(1)] Character newCharacter, Character mother, Character father)
+		{
+			string text = null;
+			string text2 = null;
+			if (mother != null)
+			{
+				text = this.GetLastName(mother);
+			}
+			if (father != null)
+			{
+				text2 = this.GetLastName(father);
+			}
+			string fullName = this.GetFullName(newCharacter, this.CombineLastNames(text, text2));
+			if (!string.IsNullOrWhiteSpace(fullName))
+			{
+				newCharacter.DisplayName = fullName;
+			}
+		}
+
+		// Token: 0x0600000A RID: 10 RVA: 0x000021EC File Offset: 0x000003EC
+		[NullableContext(2)]
+		private string GetFullName([Nullable(1)] Character character, string parentalName)
+		{
+			string text = null;
+			List<string> list;
+			this.Names.TryGetValue(character.UnitType, out list);
+			if (list != null && list.Any<string>())
+			{
+				int num = this.RandomNumberGenerator.Next(0, list.Count);
+				if (!string.IsNullOrWhiteSpace(list[num]))
+				{
+					text = list[num];
+				}
+			}
+			if (!string.IsNullOrEmpty(parentalName))
+			{
+				if (!string.IsNullOrEmpty(text))
+				{
+					text += " ";
+				}
+				text += parentalName;
+			}
+			return text;
+		}
+
+		// Token: 0x0600000B RID: 11 RVA: 0x00002268 File Offset: 0x00000468
+		[NullableContext(2)]
+		private string CombineLastNames(string motherLastName, string fatherLastName)
+		{
+			bool flag = !string.IsNullOrEmpty(motherLastName);
+			bool flag2 = !string.IsNullOrEmpty(fatherLastName);
+			if (flag || flag2)
+			{
+				TakeLastNameFrom takeLastNameFrom = this.TakeLastNameFrom;
+				if (takeLastNameFrom != TakeLastNameFrom.Mother)
+				{
+					if (takeLastNameFrom == TakeLastNameFrom.Father)
+					{
+						if (flag2)
+						{
+							return fatherLastName;
+						}
+						if (flag)
+						{
+							return motherLastName;
+						}
+					}
+				}
+				else
+				{
+					if (flag)
+					{
+						return motherLastName;
+					}
+					if (flag2)
+					{
+						return fatherLastName;
+					}
+				}
+			}
+			return null;
+		}
+
+		// Token: 0x0600000C RID: 12 RVA: 0x000022B4 File Offset: 0x000004B4
+		[NullableContext(2)]
+		private string GetLastName(Character character)
+		{
+			if (character == null || string.IsNullOrWhiteSpace(character.DisplayName))
+			{
+				return null;
+			}
+			string[] array = character.DisplayName.Split(new char[] { ' ' });
+			if (array.Length <= 1)
+			{
+				return null;
+			}
+			return array[array.Length - 1];
+		}
+
+		// Token: 0x04000004 RID: 4
+		private TakeLastNameFrom TakeLastNameFrom;
+
+		// Token: 0x04000005 RID: 5
+		private IDictionary<EUnitType, List<string>> Names;
+
+		// Token: 0x04000006 RID: 6
+		private Random RandomNumberGenerator;
+	}
+}

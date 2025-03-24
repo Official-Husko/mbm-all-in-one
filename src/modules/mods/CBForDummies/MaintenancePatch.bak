@@ -1,0 +1,34 @@
+using System;
+using System.Runtime.CompilerServices;
+using ComplexBreeding;
+using ComplexBreeding.Essences;
+using HarmonyLib;
+using MBMScripts;
+using UnityEngine;
+
+namespace CBforDummies.Patches
+{
+	// Token: 0x0200000C RID: 12
+	[HarmonyPatch(typeof(Character), "Maintenance", MethodType.Getter)]
+	public class MaintenancePatch
+	{
+		// Token: 0x06000020 RID: 32 RVA: 0x000024BC File Offset: 0x000006BC
+		[NullableContext(1)]
+		[HarmonyAfter(new string[] { "mbm.complexbreeding" })]
+		public static void Postfix(Character __instance, int ___m_FoodConsumption, ref int __result)
+		{
+			int num = ___m_FoodConsumption;
+			StatsHelpers.GetValuesFromEssences(__instance, EAttributeType.MaintenanceCost, ref num);
+			if (__instance.GrowthState == EGrowthState.Baby)
+			{
+				num = (int)((float)num / 4f);
+			}
+			if (GameManager.Instance.PlayerData.Difficulty == EDifficulty.Easy)
+			{
+				num = (int)((float)num * 0.2f);
+			}
+			num = Mathf.Clamp(num, 5, 9000);
+			__result = num;
+		}
+	}
+}

@@ -1,0 +1,158 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using BepInEx;
+using BepInEx.Configuration;
+using BepInEx.Core.Logging.Interpolation;
+using BepInEx.Logging;
+using BepInEx.Unity.Mono;
+using MBMModsServices;
+using MBMScripts;
+
+namespace CureSTD
+{
+	// Token: 0x02000006 RID: 6
+	[NullableContext(1)]
+	[Nullable(0)]
+	[BepInPlugin("com.SoapBoxHero.CureSTD", "CureSTD", "2.0.0")]
+	[BepInDependency("com.Memacile.SoapBoxHero.MBMModsServices", BepInDependency.DependencyFlags.HardDependency)]
+	public class CureSTD : BaseUnityPlugin
+	{
+		// Token: 0x17000001 RID: 1
+		// (get) Token: 0x06000006 RID: 6 RVA: 0x0000209D File Offset: 0x0000029D
+		public static IDictionary<int, Female> Females
+		{
+			get
+			{
+				return CharacterAccessTool.Females;
+			}
+		}
+
+		// Token: 0x17000002 RID: 2
+		// (get) Token: 0x06000007 RID: 7 RVA: 0x000020A4 File Offset: 0x000002A4
+		[Nullable(2)]
+		public static GameManager GM
+		{
+			[NullableContext(2)]
+			get
+			{
+				return ToolsPlugin.GM;
+			}
+		}
+
+		// Token: 0x17000003 RID: 3
+		// (get) Token: 0x06000008 RID: 8 RVA: 0x000020AB File Offset: 0x000002AB
+		[Nullable(2)]
+		public static PlayData PD
+		{
+			[NullableContext(2)]
+			get
+			{
+				return ToolsPlugin.PD;
+			}
+		}
+
+		// Token: 0x06000009 RID: 9 RVA: 0x000020B4 File Offset: 0x000002B4
+		public CureSTD()
+		{
+			CureSTD.log = base.Logger;
+			this.Enabled = base.Config.Bind<bool>(new ConfigDefinition("General", "Enabled"), true, new ConfigDescription("Enables CureSTD plugin.", null, Array.Empty<object>()));
+			this.Enabled.SettingChanged += this.Enabled_Changed;
+			this.ExcludePhrase = base.Config.Bind<string>(new ConfigDefinition("General", "ExcludePhrase"), "sickly", new ConfigDescription("If this exact phrase is in a female's name\nthen she won't be cured.", null, Array.Empty<object>()));
+		}
+
+		// Token: 0x0600000A RID: 10 RVA: 0x0000214F File Offset: 0x0000034F
+		private void Enabled_Changed([Nullable(2)] object sender, EventArgs e)
+		{
+			this.ConfigureActions();
+		}
+
+		// Token: 0x0600000B RID: 11 RVA: 0x00002158 File Offset: 0x00000358
+		private void ConfigureActions()
+		{
+			if (CureSTD._cvd != null)
+			{
+				CureSTD._cvd.enabled = this.Enabled.Value;
+				base.Logger.LogInfo((this.Enabled.Value ? "Enabled" : "Disabled") + " CureSTD action.");
+				return;
+			}
+			CureSTD._cvd = ToolsPlugin.RegisterPeriodicAction(CureSTD._period, new Action(this.Run), this.Enabled.Value);
+			ManualLogSource logger = base.Logger;
+			bool flag;
+			BepInExMessageLogInterpolatedStringHandler bepInExMessageLogInterpolatedStringHandler = new BepInExMessageLogInterpolatedStringHandler(37, 2, out flag);
+			if (flag)
+			{
+				bepInExMessageLogInterpolatedStringHandler.AppendLiteral("Registered ");
+				bepInExMessageLogInterpolatedStringHandler.AppendFormatted<string>("CureSTD");
+				bepInExMessageLogInterpolatedStringHandler.AppendLiteral(" action for period of ");
+				bepInExMessageLogInterpolatedStringHandler.AppendFormatted<string>(CureSTD._period.ToString());
+				bepInExMessageLogInterpolatedStringHandler.AppendLiteral("sec.");
+			}
+			logger.LogMessage(bepInExMessageLogInterpolatedStringHandler);
+		}
+
+		// Token: 0x0600000C RID: 12 RVA: 0x0000222C File Offset: 0x0000042C
+		public void Awake()
+		{
+			this.ConfigureActions();
+		}
+
+		// Token: 0x0600000D RID: 13 RVA: 0x00002234 File Offset: 0x00000434
+		public void Run()
+		{
+			foreach (Female female in CharacterAccessTool.GetOwnedFemales())
+			{
+				this.Cure(female);
+			}
+			foreach (Male male in CharacterAccessTool.GetOwnedMales())
+			{
+				this.Cure(male);
+			}
+		}
+
+		// Token: 0x0600000E RID: 14 RVA: 0x000022BC File Offset: 0x000004BC
+		public void Cure(Male male)
+		{
+			if (male != null && male.VenerealDisease && !male.DisplayName.Contains(this.ExcludePhrase.Value))
+			{
+				string text = "Curing STD of " + male.DisplayName + "...";
+				male.VenerealDisease = false;
+				ToolsPlugin.GameMessage(text, "E07369");
+			}
+		}
+
+		// Token: 0x0600000F RID: 15 RVA: 0x00002314 File Offset: 0x00000514
+		public void Cure(Female female)
+		{
+			if (female != null && female.VenerealDisease && !female.DisplayName.Contains(this.ExcludePhrase.Value))
+			{
+				string text = "Curing STD of " + female.DisplayName + "...";
+				female.VenerealDisease = false;
+				ToolsPlugin.GameMessage(text, "E07369");
+			}
+		}
+
+		// Token: 0x04000004 RID: 4
+		public const string AUTHOR = "SoapBoxHero";
+
+		// Token: 0x04000005 RID: 5
+		public const string GUID = "com.SoapBoxHero.CureSTD";
+
+		// Token: 0x04000006 RID: 6
+		[Nullable(2)]
+		public static ManualLogSource log;
+
+		// Token: 0x04000007 RID: 7
+		public ConfigEntry<string> ExcludePhrase;
+
+		// Token: 0x04000008 RID: 8
+		public ConfigEntry<bool> Enabled;
+
+		// Token: 0x04000009 RID: 9
+		[Nullable(2)]
+		private static PeriodicAction _cvd = null;
+
+		// Token: 0x0400000A RID: 10
+		private static float _period = 3f;
+	}
+}

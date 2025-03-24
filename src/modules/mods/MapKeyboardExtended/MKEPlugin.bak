@@ -1,0 +1,709 @@
+using System;
+using System.Runtime.CompilerServices;
+using BepInEx;
+using BepInEx.Core.Logging.Interpolation;
+using BepInEx.Logging;
+using BepInEx.Unity.Mono;
+using HarmonyLib;
+using MBMScripts;
+using UnityEngine;
+
+namespace MapKeyboardExtended
+{
+	// Token: 0x02000009 RID: 9
+	[NullableContext(2)]
+	[Nullable(0)]
+	[BepInPlugin("com.Surgy.MapKeyboardExtended", "MapKeyboardExtended", "2.0.0")]
+	public class MKEPlugin : BaseUnityPlugin
+	{
+		// Token: 0x17000001 RID: 1
+		// (get) Token: 0x06000009 RID: 9 RVA: 0x00002326 File Offset: 0x00000526
+		// (set) Token: 0x0600000A RID: 10 RVA: 0x0000232D File Offset: 0x0000052D
+		public static MKEPlugin Instance { get; private set; }
+
+		// Token: 0x0600000B RID: 11 RVA: 0x00002335 File Offset: 0x00000535
+		public MKEPlugin()
+		{
+			MKEPlugin.log = base.Logger;
+		}
+
+		// Token: 0x17000002 RID: 2
+		// (get) Token: 0x0600000C RID: 12 RVA: 0x00002348 File Offset: 0x00000548
+		public static GameManager GM
+		{
+			get
+			{
+				return GameManager.Instance;
+			}
+		}
+
+		// Token: 0x17000003 RID: 3
+		// (get) Token: 0x0600000D RID: 13 RVA: 0x0000234F File Offset: 0x0000054F
+		public static PlayData PD
+		{
+			get
+			{
+				GameManager gm = MKEPlugin.GM;
+				if (gm == null)
+				{
+					return null;
+				}
+				return gm.PlayerData;
+			}
+		}
+
+		// Token: 0x0600000E RID: 14 RVA: 0x00002364 File Offset: 0x00000564
+		private static bool Init()
+		{
+			MKEPlugin.config = new Config(MKEPlugin.Instance.Config);
+			if (!MKEPlugin.config.LogToConsole.Value)
+			{
+				MKEPlugin.log = null;
+			}
+			ManualLogSource manualLogSource;
+			if (typeof(Input) != null)
+			{
+				try
+				{
+					Input.GetKeyDown(KeyCode.F5);
+				}
+				catch (Exception ex)
+				{
+					manualLogSource = MKEPlugin.log;
+					if (manualLogSource != null)
+					{
+						bool flag;
+						BepInExErrorLogInterpolatedStringHandler bepInExErrorLogInterpolatedStringHandler = new BepInExErrorLogInterpolatedStringHandler(54, 2, out flag);
+						if (flag)
+						{
+							bepInExErrorLogInterpolatedStringHandler.AppendFormatted<string>("MapKeyboardExtended");
+							bepInExErrorLogInterpolatedStringHandler.AppendLiteral(" failed to load: `Unity.Input` is broken.");
+							bepInExErrorLogInterpolatedStringHandler.AppendLiteral(" Error text:\n");
+							bepInExErrorLogInterpolatedStringHandler.AppendFormatted<Exception>(ex);
+						}
+						manualLogSource.LogError(bepInExErrorLogInterpolatedStringHandler);
+					}
+					return false;
+				}
+			}
+			manualLogSource = MKEPlugin.log;
+			if (manualLogSource != null)
+			{
+				bool flag2;
+				BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(11, 1, out flag2);
+				if (flag2)
+				{
+					bepInExInfoLogInterpolatedStringHandler.AppendFormatted<string>("MapKeyboardExtended");
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" is loaded.");
+				}
+				manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+			}
+			return true;
+		}
+
+		// Token: 0x0600000F RID: 15 RVA: 0x00002454 File Offset: 0x00000654
+		private void Awake()
+		{
+			MKEPlugin.Instance = this;
+			MKEPlugin.IsZooming = false;
+			ManualLogSource manualLogSource = MKEPlugin.log;
+			if (manualLogSource != null)
+			{
+				bool flag;
+				BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(19, 1, out flag);
+				if (flag)
+				{
+					bepInExInfoLogInterpolatedStringHandler.AppendFormatted<string>("MapKeyboardExtended");
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" is initializing...");
+				}
+				manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+			}
+			MKEPlugin.Init();
+		}
+
+		// Token: 0x06000010 RID: 16 RVA: 0x000024A7 File Offset: 0x000006A7
+		private void Update()
+		{
+			MKEPlugin.DoUpdate();
+		}
+
+		// Token: 0x17000004 RID: 4
+		// (get) Token: 0x06000011 RID: 17 RVA: 0x000024AE File Offset: 0x000006AE
+		// (set) Token: 0x06000012 RID: 18 RVA: 0x000024B5 File Offset: 0x000006B5
+		public static bool IsZooming
+		{
+			get
+			{
+				return MKEPlugin._zooming;
+			}
+			set
+			{
+				MKEPlugin._zooming = value;
+			}
+		}
+
+		// Token: 0x06000013 RID: 19 RVA: 0x000024BD File Offset: 0x000006BD
+		[NullableContext(1)]
+		public static KeyCode StrToKeyCode(string name)
+		{
+			return (KeyCode)Enum.Parse(typeof(KeyCode), name, true);
+		}
+
+		// Token: 0x06000014 RID: 20 RVA: 0x000024D5 File Offset: 0x000006D5
+		[NullableContext(1)]
+		public static void GameMessage(string message)
+		{
+			GameManager gm = MKEPlugin.GM;
+			if (gm == null)
+			{
+				return;
+			}
+			gm.AddLogMessage(message);
+		}
+
+		// Token: 0x06000015 RID: 21 RVA: 0x000024E8 File Offset: 0x000006E8
+		private static void ZoomIn()
+		{
+			if (MKEPlugin.IsZooming)
+			{
+				return;
+			}
+			MKEPlugin.IsZooming = true;
+			MKEPlugin._current_zoom = MKEPlugin.GM.GetCameraOrthographicSizeRate();
+			MKEPlugin._current_zoom -= MKEPlugin.config.ZoomStep.Value;
+			if (MKEPlugin._current_zoom < MKEPlugin._zoom_min)
+			{
+				MKEPlugin._current_zoom = MKEPlugin._zoom_min;
+			}
+			MKEPlugin.GM.SetCameraOrthographicSizeRate(MKEPlugin._current_zoom, MKEPlugin._zoom_rate, MKEPlugin._zoom_max);
+			MKEPlugin.IsZooming = false;
+		}
+
+		// Token: 0x06000016 RID: 22 RVA: 0x00002564 File Offset: 0x00000764
+		private static void ZoomOut()
+		{
+			if (MKEPlugin.IsZooming)
+			{
+				return;
+			}
+			MKEPlugin.IsZooming = true;
+			MKEPlugin._current_zoom = MKEPlugin.GM.GetCameraOrthographicSizeRate();
+			MKEPlugin._current_zoom += MKEPlugin.config.ZoomStep.Value;
+			if (MKEPlugin._current_zoom > MKEPlugin._zoom_max)
+			{
+				MKEPlugin._current_zoom = MKEPlugin._zoom_max;
+			}
+			MKEPlugin.GM.SetCameraOrthographicSizeRate(MKEPlugin._current_zoom, MKEPlugin._zoom_rate, MKEPlugin._zoom_max);
+			MKEPlugin.IsZooming = false;
+		}
+
+		// Token: 0x06000017 RID: 23 RVA: 0x000025E0 File Offset: 0x000007E0
+		[NullableContext(1)]
+		private static Unit SelectedUnit()
+		{
+			Unit unit = MKEPlugin.PD.SelectedUnit;
+			if (unit == null)
+			{
+				unit = MKEPlugin.PD.HighlightedUnit;
+			}
+			if (unit == null)
+			{
+				unit = MKEPlugin.PD.DraggingUnit;
+			}
+			return unit;
+		}
+
+		// Token: 0x06000018 RID: 24 RVA: 0x00002618 File Offset: 0x00000818
+		private static void Dismantle()
+		{
+			if (MKEPlugin.PD == null || MKEPlugin.PD.Days < 11 || MKEPlugin.PD.MultiSelectedUnitSeqList.Count == 0)
+			{
+				return;
+			}
+			EPlayEventType eplayEventType = EPlayEventType.ThisIsBlackCompany;
+			if (MKEPlugin.PD.PlayEventListContains(eplayEventType))
+			{
+				MKEPlugin.GameMessage("<color=#FFFF00>" + MKEPlugin._T("#Flora") + "</color>: I'm overworked already!");
+				return;
+			}
+			int num = MKEPlugin.PD.MultiSelectedUnitSeqList.Count;
+			int num2 = (int)eplayEventType.GetValue(0) - MKEPlugin.PD.GetPlayEventCount(eplayEventType);
+			if (num > num2)
+			{
+				num = num2;
+			}
+			MKEPlugin.PD.AllocateMultiSelectedUnitAtFlora();
+			MKEPlugin.PD.ClearMultiSelect();
+			MKEPlugin.GameMessage(string.Format("Dismantling <color=#FFFF00>{0}</color> products...", num));
+		}
+
+		// Token: 0x06000019 RID: 25 RVA: 0x000026D8 File Offset: 0x000008D8
+		[NullableContext(1)]
+		private static void SellUnit(Unit toSell, bool print_log = true)
+		{
+			if (toSell == null || !toSell.IsInteractable || toSell.SellingPrice == 0 || toSell.IsNotDraggable || toSell.Favorite || toSell.Sector == ESector.Market)
+			{
+				return;
+			}
+			if (print_log)
+			{
+				string text = MKEPlugin._T(toSell.DisplayName);
+				int sellingPrice = toSell.SellingPrice;
+				MKEPlugin.GameMessage(string.Format("Sold <color=#E07369>{0}</color> for <color=#FFFF00>{1}G</color>", text, sellingPrice));
+			}
+			toSell.Sell(false, true, -1, true);
+		}
+
+		// Token: 0x0600001A RID: 26 RVA: 0x00002750 File Offset: 0x00000950
+		private static void Sell()
+		{
+			SeqList<Unit> multiSelectedUnitSeqList = MKEPlugin.PD.MultiSelectedUnitSeqList;
+			if (multiSelectedUnitSeqList.Count > 0)
+			{
+				int num = 0;
+				int num2 = 0;
+				foreach (Unit unit in multiSelectedUnitSeqList.GetList())
+				{
+					num += unit.SellingPrice;
+					num2++;
+					MKEPlugin.SellUnit(unit, false);
+				}
+				MKEPlugin.GameMessage(string.Format("Sold <color=#0000FF>{0}</color> products for <color=#FFFF00>{1}G</color>", num2, num));
+				MKEPlugin.PD.ClearMultiSelect();
+				return;
+			}
+			MKEPlugin.SellUnit(MKEPlugin.SelectedUnit(), true);
+		}
+
+		// Token: 0x0600001B RID: 27 RVA: 0x00002800 File Offset: 0x00000A00
+		[NullableContext(1)]
+		private static void BuyUnit(Unit toBuy, bool print_log = true)
+		{
+			if (toBuy == null || toBuy.BuyingPrice == 0 || !toBuy.IsInteractable || toBuy.IsNotDraggable || !toBuy.AbleToBuy() || toBuy.Favorite || toBuy.Sector != ESector.Market)
+			{
+				return;
+			}
+			MKEPlugin.PD.AllocateToKeepingRoom(toBuy);
+			toBuy.Buy();
+			MKEPlugin.GM.OpenWindow(EGameWindow.KeepingRoom);
+			if (print_log)
+			{
+				string text = MKEPlugin._T(toBuy.DisplayName);
+				int buyingPrice = toBuy.BuyingPrice;
+				MKEPlugin.GameMessage(string.Format("Bought <color=#E07369>{0}</color> for <color=#FFFF00>{1}G</color>", text, buyingPrice));
+			}
+		}
+
+		// Token: 0x0600001C RID: 28 RVA: 0x00002894 File Offset: 0x00000A94
+		private static void Buy()
+		{
+			SeqList<Unit> multiSelectedUnitSeqList = MKEPlugin.PD.MultiSelectedUnitSeqList;
+			if (multiSelectedUnitSeqList.Count > 0)
+			{
+				int num = 0;
+				int num2 = 0;
+				foreach (Unit unit in multiSelectedUnitSeqList.GetList())
+				{
+					num += unit.BuyingPrice;
+					num2++;
+					MKEPlugin.BuyUnit(unit, false);
+				}
+				MKEPlugin.PD.ClearMultiSelect();
+				MKEPlugin.GameMessage(string.Format("Bought <color=#0000FF>{0}</color> products for <color=#FFFF00>{1}G</color>", num2, num));
+				return;
+			}
+			MKEPlugin.BuyUnit(MKEPlugin.SelectedUnit(), true);
+		}
+
+		// Token: 0x0600001D RID: 29 RVA: 0x00002944 File Offset: 0x00000B44
+		private static void ConfigUnit(Character u, int? param)
+		{
+			if (u == null || param == null)
+			{
+				return;
+			}
+			int? num = param;
+			int num2 = 4;
+			if ((num.GetValueOrDefault() == num2) & (num != null))
+			{
+				Random random = new Random();
+				u.EyeColor = new Color((float)random.Next(256), (float)random.Next(256), (float)random.Next(256), 1f);
+				ManualLogSource manualLogSource = MKEPlugin.log;
+				if (manualLogSource != null)
+				{
+					bool flag;
+					BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(28, 2, out flag);
+					if (flag)
+					{
+						bepInExInfoLogInterpolatedStringHandler.AppendLiteral("Setting eye color ");
+						bepInExInfoLogInterpolatedStringHandler.AppendFormatted<Color>(u.EyeColor);
+						bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" for unit ");
+						bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.UnitId);
+					}
+					manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+				}
+				return;
+			}
+			num = param;
+			num2 = 5;
+			if ((num.GetValueOrDefault() == num2) & (num != null))
+			{
+				Random random2 = new Random();
+				u.SkinColor = new Color((float)random2.Next(256), (float)random2.Next(256), (float)random2.Next(256), 1f);
+				ManualLogSource manualLogSource = MKEPlugin.log;
+				if (manualLogSource != null)
+				{
+					bool flag;
+					BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(29, 2, out flag);
+					if (flag)
+					{
+						bepInExInfoLogInterpolatedStringHandler.AppendLiteral("Setting skin color ");
+						bepInExInfoLogInterpolatedStringHandler.AppendFormatted<Color>(u.SkinColor);
+						bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" for unit ");
+						bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.UnitId);
+					}
+					manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+				}
+				return;
+			}
+			if (u.Figure != EFigure.Woman && u.Figure != EFigure.Girl)
+			{
+				return;
+			}
+			num = param;
+			num2 = 1;
+			if ((num.GetValueOrDefault() == num2) & (num != null))
+			{
+				if (u.GrowthState != EGrowthState.Child)
+				{
+					u.ChangeToChild();
+				}
+				else
+				{
+					u.ChangeToAdult();
+				}
+				ManualLogSource manualLogSource = MKEPlugin.log;
+				if (manualLogSource != null)
+				{
+					bool flag;
+					BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(28, 1, out flag);
+					if (flag)
+					{
+						bepInExInfoLogInterpolatedStringHandler.AppendLiteral("Setting child mode for unit ");
+						bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.UnitId);
+					}
+					manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+					return;
+				}
+			}
+			else
+			{
+				num = param;
+				num2 = 2;
+				if ((num.GetValueOrDefault() == num2) & (num != null))
+				{
+					u.ClothesType = 0;
+					ManualLogSource manualLogSource = MKEPlugin.log;
+					if (manualLogSource != null)
+					{
+						bool flag;
+						BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(28, 2, out flag);
+						if (flag)
+						{
+							bepInExInfoLogInterpolatedStringHandler.AppendLiteral("No clothes for unit ");
+							bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.UnitId);
+							bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" (type ");
+							bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.ClothesType);
+							bepInExInfoLogInterpolatedStringHandler.AppendLiteral(")");
+						}
+						manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+						return;
+					}
+				}
+				else
+				{
+					num = param;
+					num2 = 3;
+					if ((num.GetValueOrDefault() == num2) & (num != null))
+					{
+						int num3 = (int)Traverse.Create(u).Field("m_TitsType").GetValue();
+						u.TitsType = num3 + 1;
+						if (num3 > 3)
+						{
+							num3 = 0;
+							Traverse.Create(u).Field("m_TitsType").SetValue(num3);
+						}
+						ManualLogSource manualLogSource = MKEPlugin.log;
+						if (manualLogSource != null)
+						{
+							bool flag;
+							BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(23, 2, out flag);
+							if (flag)
+							{
+								bepInExInfoLogInterpolatedStringHandler.AppendLiteral("Setting tits ");
+								bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(num3);
+								bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" for unit ");
+								bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.UnitId);
+							}
+							manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+							return;
+						}
+					}
+					else
+					{
+						num = param;
+						num2 = 6;
+						if ((num.GetValueOrDefault() == num2) & (num != null))
+						{
+							num2 = u.TattooType + 1;
+							u.TattooType = num2;
+							if (num2 > 1)
+							{
+								u.TattooType = 0;
+							}
+							ManualLogSource manualLogSource = MKEPlugin.log;
+							if (manualLogSource != null)
+							{
+								bool flag;
+								BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(24, 2, out flag);
+								if (flag)
+								{
+									bepInExInfoLogInterpolatedStringHandler.AppendLiteral("Setting tatoo ");
+									bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.TattooType);
+									bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" for unit ");
+									bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.UnitId);
+								}
+								manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+								return;
+							}
+						}
+						else
+						{
+							num = param;
+							num2 = 7;
+							if ((num.GetValueOrDefault() == num2) & (num != null))
+							{
+								int num4 = u.EarHairType;
+								int num5 = num4;
+								if (++num4 > 4)
+								{
+									u.EarHairType = 0;
+								}
+								else
+								{
+									u.EarHairType = num4;
+									if (u.EarHairType == num5)
+									{
+										u.EarHairType = 0;
+									}
+								}
+								ManualLogSource manualLogSource = MKEPlugin.log;
+								if (manualLogSource != null)
+								{
+									bool flag;
+									BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(33, 3, out flag);
+									if (flag)
+									{
+										bepInExInfoLogInterpolatedStringHandler.AppendLiteral("Setting top ear type ");
+										bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(num5);
+										bepInExInfoLogInterpolatedStringHandler.AppendLiteral("->");
+										bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.EarHairType);
+										bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" for unit ");
+										bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.UnitId);
+									}
+									manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+									return;
+								}
+							}
+							else
+							{
+								num = param;
+								num2 = 8;
+								if ((num.GetValueOrDefault() == num2) & (num != null))
+								{
+									int earType = u.EarType;
+									u.ChangeEarRightInAll();
+									ManualLogSource manualLogSource = MKEPlugin.log;
+									if (manualLogSource != null)
+									{
+										bool flag;
+										BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(34, 3, out flag);
+										if (flag)
+										{
+											bepInExInfoLogInterpolatedStringHandler.AppendLiteral("Setting side ear type ");
+											bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(earType);
+											bepInExInfoLogInterpolatedStringHandler.AppendLiteral("->");
+											bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.EarType);
+											bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" for unit ");
+											bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.UnitId);
+										}
+										manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+										return;
+									}
+								}
+								else
+								{
+									num = param;
+									num2 = 9;
+									if ((num.GetValueOrDefault() == num2) & (num != null))
+									{
+										int tailType = u.TailType;
+										u.ChangeTailRightInAll();
+										ManualLogSource manualLogSource = MKEPlugin.log;
+										if (manualLogSource != null)
+										{
+											bool flag;
+											BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(30, 3, out flag);
+											if (flag)
+											{
+												bepInExInfoLogInterpolatedStringHandler.AppendLiteral("Setting tail type ");
+												bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(tailType);
+												bepInExInfoLogInterpolatedStringHandler.AppendLiteral("->");
+												bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.TailType);
+												bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" for unit ");
+												bepInExInfoLogInterpolatedStringHandler.AppendFormatted<int>(u.UnitId);
+											}
+											manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Token: 0x0600001E RID: 30 RVA: 0x00002EDC File Offset: 0x000010DC
+		private static void SetParameter(int param)
+		{
+			SeqList<Unit> multiSelectedUnitSeqList = MKEPlugin.PD.MultiSelectedUnitSeqList;
+			if (multiSelectedUnitSeqList.Count > 0)
+			{
+				int num = 0;
+				foreach (Unit unit in multiSelectedUnitSeqList.GetList())
+				{
+					num++;
+					MKEPlugin.ConfigUnit(unit as Character, new int?(param));
+				}
+				MKEPlugin.GameMessage(string.Format("Modified <color=#0000FF>{0}</color> products", num));
+				return;
+			}
+			MKEPlugin.ConfigUnit(MKEPlugin.SelectedUnit() as Character, new int?(param));
+		}
+
+		// Token: 0x0600001F RID: 31 RVA: 0x00002F7C File Offset: 0x0000117C
+		public static void DoUpdate()
+		{
+			if (MKEPlugin.GM == null || MKEPlugin.config == null || !MKEPlugin.config.PluginEnabled.Value)
+			{
+				return;
+			}
+			Func<KeyCode, bool> func = (KeyCode k) => Input.GetKeyDown(k);
+			if (MKEPlugin.config.ZoomInKey.Value != KeyCode.None && func(MKEPlugin.config.ZoomInKey.Value))
+			{
+				MKEPlugin.ZoomIn();
+				return;
+			}
+			if (MKEPlugin.config.ZoomOutKey.Value != KeyCode.None && func(MKEPlugin.config.ZoomOutKey.Value))
+			{
+				MKEPlugin.ZoomOut();
+				return;
+			}
+			if (func(MKEPlugin.config.SellKey.Value))
+			{
+				MKEPlugin.Sell();
+				return;
+			}
+			if (func(MKEPlugin.config.BuyKey.Value))
+			{
+				MKEPlugin.Buy();
+				return;
+			}
+			if (func(MKEPlugin.config.DismantleKey.Value))
+			{
+				MKEPlugin.Dismantle();
+				return;
+			}
+			int num = 0;
+			if (func(KeyCode.Keypad1))
+			{
+				num = 1;
+			}
+			else if (func(KeyCode.Keypad2))
+			{
+				num = 2;
+			}
+			else if (func(KeyCode.Keypad3))
+			{
+				num = 3;
+			}
+			else if (func(KeyCode.Keypad4))
+			{
+				num = 4;
+			}
+			else if (func(KeyCode.Keypad5))
+			{
+				num = 5;
+			}
+			else if (func(KeyCode.Keypad6))
+			{
+				num = 6;
+			}
+			else if (func(KeyCode.Keypad7))
+			{
+				num = 7;
+			}
+			else if (func(KeyCode.Keypad8))
+			{
+				num = 8;
+			}
+			else if (func(KeyCode.Keypad9))
+			{
+				num = 9;
+			}
+			if (num > 0)
+			{
+				MKEPlugin.SetParameter(num);
+			}
+		}
+
+		// Token: 0x04000012 RID: 18
+		[Nullable(1)]
+		public const string AUTHOR = "Surgy";
+
+		// Token: 0x04000013 RID: 19
+		[Nullable(1)]
+		public const string GUID = "com.Surgy.MapKeyboardExtended";
+
+		// Token: 0x04000014 RID: 20
+		public static ManualLogSource log;
+
+		// Token: 0x04000015 RID: 21
+		public static bool _zooming;
+
+		// Token: 0x04000016 RID: 22
+		public static float _current_zoom = 0f;
+
+		// Token: 0x04000017 RID: 23
+		private static float _zoom_min = 1f;
+
+		// Token: 0x04000018 RID: 24
+		private static float _zoom_max = 4f;
+
+		// Token: 0x04000019 RID: 25
+		private static float _zoom_rate = 0.1f;
+
+		// Token: 0x0400001A RID: 26
+		public static Config config;
+
+		// Token: 0x0400001C RID: 28
+		[Nullable(1)]
+		private static MKEPlugin.Localize _T = new MKEPlugin.Localize(SeqLocalization.Localize);
+
+		// Token: 0x0200000B RID: 11
+		// (Invoke) Token: 0x06000022 RID: 34
+		[NullableContext(0)]
+		private delegate string Localize(string str);
+	}
+}

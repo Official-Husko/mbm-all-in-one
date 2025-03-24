@@ -1,0 +1,197 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using ComplexBreeding.Essences;
+using MBMScripts;
+
+namespace CBforDummies.Configuration
+{
+	// Token: 0x02000016 RID: 22
+	internal class DefaultEssenceAttributes
+	{
+		// Token: 0x06000040 RID: 64 RVA: 0x00003348 File Offset: 0x00001548
+		[NullableContext(1)]
+		public static List<UpgradeAttributeInfo> GetDefaultEssenceAttributes(ETrait essenceTrait)
+		{
+			switch (essenceTrait)
+			{
+			case ETrait.Trait93:
+				return new List<UpgradeAttributeInfo>
+				{
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.ConceptionRate,
+						UpgradeValue = 3f,
+						UpgradePointsPerValue = 1f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.MaxBirthCount,
+						UpgradeValue = 1f,
+						UpgradePointsPerValue = 1f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.DepravationGain,
+						UpgradeValue = 2f,
+						UpgradePointsPerValue = 1f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.MaxHealth,
+						UpgradeValue = 30f,
+						UpgradePointsPerValue = 3f
+					}
+				};
+			case ETrait.Trait94:
+				return new List<UpgradeAttributeInfo>
+				{
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.DamageDuringSex,
+						UpgradeValue = -5f,
+						UpgradePointsPerValue = 1f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.SexTime,
+						UpgradeValue = -3f,
+						UpgradePointsPerValue = 1f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.MaxBirthCount,
+						UpgradeValue = 2f,
+						UpgradePointsPerValue = 2f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.MilkQuality,
+						UpgradeValue = 30f,
+						UpgradePointsPerValue = 2f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.MaxHealth,
+						UpgradeValue = 50f,
+						UpgradePointsPerValue = 5f
+					}
+				};
+			case ETrait.Trait95:
+				return new List<UpgradeAttributeInfo>
+				{
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.MilkProductionRate,
+						UpgradeValue = 5f,
+						UpgradePointsPerValue = 1f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.BreastsCapacity,
+						UpgradeValue = 4f,
+						UpgradePointsPerValue = 2f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.DamageDuringSex,
+						UpgradeValue = -5f,
+						UpgradePointsPerValue = 3f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.MaintenanceCost,
+						UpgradeValue = -10f,
+						UpgradePointsPerValue = 4f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.BreastsCapacity,
+						UpgradeValue = 15f,
+						UpgradePointsPerValue = 4f
+					}
+				};
+			case ETrait.Trait96:
+				return new List<UpgradeAttributeInfo>
+				{
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.MaxHealth,
+						UpgradeValue = 20f,
+						UpgradePointsPerValue = 1f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.MaintenanceCost,
+						UpgradeValue = -3f,
+						UpgradePointsPerValue = 1f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.DamageDuringSex,
+						UpgradeValue = -10f,
+						UpgradePointsPerValue = 2f
+					}
+				};
+			case ETrait.Trait97:
+				return new List<UpgradeAttributeInfo>
+				{
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.GrowthTime,
+						UpgradeValue = -6f,
+						UpgradePointsPerValue = 1f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.ConceptionRate,
+						UpgradeValue = 5f,
+						UpgradePointsPerValue = 2f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.MilkQuality,
+						UpgradeValue = 50f,
+						UpgradePointsPerValue = 4f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.ConceptionRate,
+						UpgradeValue = 10f,
+						UpgradePointsPerValue = 5f
+					}
+				};
+			case ETrait.Trait98:
+				return new List<UpgradeAttributeInfo>
+				{
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.MilkQuality,
+						UpgradeValue = 20f,
+						UpgradePointsPerValue = 1f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.SexTime,
+						UpgradeValue = -2f,
+						UpgradePointsPerValue = 1f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.BreastsCapacity,
+						UpgradeValue = 5f,
+						UpgradePointsPerValue = 1f
+					},
+					new UpgradeAttributeInfo
+					{
+						Attribute = EAttributeType.MaxBirthCount,
+						UpgradeValue = 2f,
+						UpgradePointsPerValue = 3f
+					}
+				};
+			default:
+				return new List<UpgradeAttributeInfo>();
+			}
+		}
+	}
+}

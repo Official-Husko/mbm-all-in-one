@@ -1,0 +1,55 @@
+using System;
+using System.Runtime.CompilerServices;
+using BepInEx.Configuration;
+using MBMModsServices;
+using MBMScripts;
+
+namespace ChaoticMarket.RandomTraitGeneration
+{
+	// Token: 0x02000008 RID: 8
+	[NullableContext(1)]
+	[Nullable(0)]
+	public class RandomTraitConfig
+	{
+		// Token: 0x06000009 RID: 9 RVA: 0x000021E8 File Offset: 0x000003E8
+		public RandomTraitConfig(ConfigFile config)
+		{
+			this.ConfigFile = config;
+			this.RandomNumberGenerator = new Random();
+		}
+
+		// Token: 0x0600000A RID: 10 RVA: 0x00002204 File Offset: 0x00000404
+		public RandomTraitGeneratorSpecificCharacter GenerateSpecificRandomTraitGenerator(EUnitType unitType)
+		{
+			ConfigEntry<bool> configEntry = this.ConfigFile.Bind<bool>(new ConfigDefinition(unitType.ToString(), "UseGameDefaultTraitGeneration"), false, new ConfigDescription("If 'true' then the default trait generation of the game" + string.Format("is used and the trait settings below for {0} are ignored.", unitType), null, Array.Empty<object>()));
+			RandomTraitGeneratorSpecificCharacter randomTraitGeneratorSpecificCharacter = new RandomTraitGeneratorSpecificCharacter(this.RandomNumberGenerator, configEntry.Value);
+			foreach (ETraitReadable etraitReadable in TraitUtility.GeneralTraits)
+			{
+				float traitIncrement = TraitUtility.GetTraitIncrement(etraitReadable);
+				bool flag = traitIncrement < 1f;
+				string text = "For this trait the random value is divided by 100 later. ";
+				if (!flag)
+				{
+					text = "";
+				}
+				ConfigEntry<double> configEntry2 = this.ConfigFile.Bind<double>(new ConfigDefinition(unitType.ToString(), string.Format("{0}.ChanceOfTrait", etraitReadable)), 100.0, new ConfigDescription("The chance that this value is applied to a new character", null, Array.Empty<object>()));
+				ConfigEntry<int> configEntry3 = this.ConfigFile.Bind<int>(new ConfigDefinition(unitType.ToString(), string.Format("{0}.MaxValue", etraitReadable)), RandomTraitConfig.GetTraitIncrementAsInteger(etraitReadable, flag) * 3, new ConfigDescription("Max value: " + text + "\n" + string.Format("The random generation only generates values that are a multiple of {0}.", traitIncrement), null, Array.Empty<object>()));
+				ConfigEntry<int> configEntry4 = this.ConfigFile.Bind<int>(new ConfigDefinition(unitType.ToString(), string.Format("{0}.MinValue", etraitReadable)), RandomTraitConfig.GetTraitIncrementAsInteger(etraitReadable, flag) * -3, new ConfigDescription("Min value.", null, Array.Empty<object>()));
+				randomTraitGeneratorSpecificCharacter.SetTraitGeneration(etraitReadable, configEntry2.Value, flag, configEntry3.Value, configEntry4.Value);
+			}
+			return randomTraitGeneratorSpecificCharacter;
+		}
+
+		// Token: 0x0600000B RID: 11 RVA: 0x000023F4 File Offset: 0x000005F4
+		private static int GetTraitIncrementAsInteger(ETraitReadable trait, bool divideBy100)
+		{
+			return (int)Math.Round((double)(TraitUtility.GetTraitIncrement(trait) * (float)(divideBy100 ? 100 : 1)));
+		}
+
+		// Token: 0x0400000C RID: 12
+		private Random RandomNumberGenerator;
+
+		// Token: 0x0400000D RID: 13
+		private ConfigFile ConfigFile;
+	}
+}

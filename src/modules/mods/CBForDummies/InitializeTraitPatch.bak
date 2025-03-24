@@ -1,0 +1,31 @@
+using System;
+using System.Runtime.CompilerServices;
+using ComplexBreeding;
+using ComplexBreeding.Essences;
+using HarmonyLib;
+using MBMScripts;
+
+namespace CBforDummies.Patches
+{
+	// Token: 0x0200000B RID: 11
+	[HarmonyPatch(typeof(Character), "InitializeTrait", new Type[] { })]
+	public class InitializeTraitPatch
+	{
+		// Token: 0x0600001E RID: 30 RVA: 0x0000241C File Offset: 0x0000061C
+		[NullableContext(1)]
+		public static void Postfix(Character __instance)
+		{
+			Random random = new Random();
+			int essenceMinValue = CBforDummiesPlugin.MarketConfig.EssenceMinValue;
+			int essenceMaxValue = CBforDummiesPlugin.MarketConfig.EssenceMaxValue;
+			foreach (IEssenceData essenceData in GameData.EssencesDataList)
+			{
+				if (__instance.GetTraitValue(essenceData.ReplacedTrait) != 0f)
+				{
+					int num = random.Next(essenceMinValue, essenceMaxValue + 1);
+					__instance.SetTraitValue(essenceData.ReplacedTrait, (float)num);
+				}
+			}
+		}
+	}
+}

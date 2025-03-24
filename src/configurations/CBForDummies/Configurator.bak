@@ -1,0 +1,134 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using BepInEx.Configuration;
+using ComplexBreeding;
+using ComplexBreeding.Essences;
+using MBMScripts;
+
+namespace CBforDummies.Configuration
+{
+	// Token: 0x02000015 RID: 21
+	[NullableContext(1)]
+	[Nullable(0)]
+	public class Configurator
+	{
+		// Token: 0x0600003A RID: 58 RVA: 0x00002DAD File Offset: 0x00000FAD
+		public Configurator(ConfigFile config)
+		{
+			this.ConfigFile = config;
+		}
+
+		// Token: 0x0600003B RID: 59 RVA: 0x00002DBC File Offset: 0x00000FBC
+		public GeneralConfigValues GetGeneralConfigValues()
+		{
+			ConfigEntry<int> configEntry = this.ConfigFile.Bind<int>(new ConfigDefinition("1. General Config Values", "Starting Money"), 1000, new ConfigDescription("Money at the start of the game.", null, Array.Empty<object>()));
+			ConfigEntry<int> configEntry2 = this.ConfigFile.Bind<int>(new ConfigDefinition("1. General Config Values", "Mansion price"), 100, new ConfigDescription("The price to buy the mansion. This does not change the UI, so it will still show the default price.", null, Array.Empty<object>()));
+			ConfigEntry<SameSpeciesFemaleOffSpringComputationType> configEntry3 = this.ConfigFile.Bind<SameSpeciesFemaleOffSpringComputationType>(new ConfigDefinition("1. General Config Values", "Same species female offspring computation type"), SameSpeciesFemaleOffSpringComputationType.Adjusted_by_max_births, new ConfigDescription("How the chance of having female offspring is computed. 'Fixed' uses 'Chance of same species female offspring\n'option as the probability of female offspring. 'Adjusted by max births' uses the formula 1/MaxBirthCount to compute the chance of female offspring.\nThis means on average every slave has 1 female offspring before they reach 'MaxBirthCount'. This chance is multiplies with 'Adjusted female offspring multiplier'.\nFor Example if 'Adjusted female offspring multiplier' is 2 then every female with have 2 female offspring on average. Or if female offspring multiplier is 0.5 then\nevery only have the females will have a female child before reaching max births (on average). Of course all the above examples assume womb size to be 1.\nWith higher than 1 womb size there are more offspring per birth, so a higher chance of getting female offspring.", null, Array.Empty<object>()));
+			ConfigEntry<int> configEntry4 = this.ConfigFile.Bind<int>(new ConfigDefinition("1. General Config Values", "Chance of same species female offspring"), 10, new ConfigDescription("Only used if 'Same species female offspring computation type' is set to 'Fixed'. The chance for a offspring\nto be female. E.g.: 100 = 100% chance for female offspring (no male offspring), 50 = 50% chance for female offspring, 0=0% chance for female offsrping.", null, Array.Empty<object>()));
+			ConfigEntry<double> configEntry5 = this.ConfigFile.Bind<double>(new ConfigDefinition("1. General Config Values", "Adjusted female offspring multiplier"), 1.1, new ConfigDescription("Only used if 'Same species female offspring computation type' is set to 'Adjusted by max births'.\nSee 'Same species female offspring computation type' description for an explanation how the computation works.\nAs a guidline: For a womb size of 1 if the 'Adjusted female offspring multiplier' value is 1 then on average each female will produce 1 female offspring\nif the multiplier value is 2 then on each female will produce 2 female offspring.", null, Array.Empty<object>()));
+			ConfigEntry<EssenceInheritanceType> configEntry6 = this.ConfigFile.Bind<EssenceInheritanceType>(new ConfigDefinition("1. General Config Values", "Essence Inheritance Type"), EssenceInheritanceType.Additive, new ConfigDescription("How essences are inherited from the parents to the offspring. 'Additive' adds essences of both parents.\n'Complex Breeding' computes the essences based on the complex breeding mod formula. See parameter description 'ComplexBreedingFormula.BaseChance'", null, Array.Empty<object>()));
+			ConfigEntry<int> configEntry7 = this.ConfigFile.Bind<int>(new ConfigDefinition("1. General Config Values", "ComplexBreedingFormula.BaseChance"), 7, new ConfigDescription("Only used if 'Essence Inheritance Type' is set to 'Complex Breeding'.\nThe Complex Breeding mod changes the essence of the offspring by +1 or -1 depending on the following formula:\n 'Chance to increase Essence by +1' = BaseChance + offspringTier * TierMultiplier + MainParentEssenceValue * MainParentEssenceMultiplier\n\t + subParentEssenceValue * SubParentEssenceMultiplierFor female offspring the main parent is the mother, for male offspring the main parent is the father.\nThe main parents essence value is increased by +1 if the probability given by the formula is successful.\nThe values are given as probabilities, so if the value for BaseChance is 7 then that means there is a base chance of 7% that the offspring\nhas an +1 essence value of the main parent.\n7 is the default value in Complex Breeding mod.\nTo make inheritance improvement faster in general increase the BaseChance.", null, Array.Empty<object>()));
+			ConfigEntry<int> configEntry8 = this.ConfigFile.Bind<int>(new ConfigDefinition("1. General Config Values", "ComplexBreedingFormula.TierMultiplier"), 8, new ConfigDescription("Only used if 'Essence Inheritance Type' is set to 'Complex Breeding'.\nThe Complex Breeding formula in the description of 'ComplexBreedingFormula.BaseChance' shows how the 'TierMultiplier'\ninfluences the essence inheritance.\n8 is the default value in Complex Breeding mod.\nTo make essence inheritance easier for higher tier units (e.g. red cap goblins or angels) increase this value.", null, Array.Empty<object>()));
+			ConfigEntry<int> configEntry9 = this.ConfigFile.Bind<int>(new ConfigDefinition("1. General Config Values", "ComplexBreedingFormula.MainParentEssenceMultiplier"), -6, new ConfigDescription("Only used if 'Essence Inheritance Type' is set to 'Complex Breeding'.\nThe Complex Breeding formula in the description of 'ComplexBreedingFormula.BaseChance' shows how the 'MainParentEssenceMultiplier'\ninfluences the essence inheritance.\n-6 is the default value in Complex Breeding mod. This creates negative feedback that makes progression slower the higher\nthe main parents essence value is.\nIf you want essence inheritance to be easier the higher the essence value then make this value positive", null, Array.Empty<object>()));
+			ConfigEntry<int> configEntry10 = this.ConfigFile.Bind<int>(new ConfigDefinition("1. General Config Values", "ComplexBreedingFormula.SubParentEssenceMultiplier"), 5, new ConfigDescription("Only used if 'Essence Inheritance Type' is set to 'Complex Breeding'.\nThe Complex Breeding formula in the description of 'ComplexBreedingFormula.BaseChance' shows how the 'SubParentEssenceMultiplier'\ninfluences the essence inheritance.\n5 is the default value in Complex Breeding mod. This offsets the negative default MainParentEssenceMultiplier value.", null, Array.Empty<object>()));
+			ConfigEntry<int> configEntry11 = this.ConfigFile.Bind<int>(new ConfigDefinition("1. General Config Values", "ComplexBreedingFormula.DecreaseEssenceChance"), 20, new ConfigDescription("Only used if 'Essence Inheritance Type' is set to 'Complex Breeding'.\nThe 'DecreaseEssenceChance' gives the percentage chance that the offspring inherits the main parents essence value -1.\nIf the offspring already got an essence increase by +1 then this essence decrease chance is not applied (so a successful +1 increase is not reduced to +0).\nCertain special traits can reduce the essence decrease chance.\n20 is the default value in Complex Breeding mod.", null, Array.Empty<object>()));
+			return new GeneralConfigValues
+			{
+				StartingMoney = configEntry.Value,
+				MansionPrice = configEntry2.Value,
+				SameSpeciesFemaleOffspringComputationType = configEntry3.Value,
+				ChanceOfSameSpeciesFemaleOffspring = (double)configEntry4.Value,
+				AdjustedFemaleOffspringMultiplier = configEntry5.Value,
+				EssenceInheritanceType = configEntry6.Value,
+				ComplexBreedingFormulaBaseChance = configEntry7.Value,
+				ComplexBreedingFormulaTierMultiplier = configEntry8.Value,
+				ComplexBreedingFormulaMainParentEssenceMultiplier = configEntry9.Value,
+				ComplexBreedingFormulaSubParentEssenceMultiplier = configEntry10.Value,
+				ComplexBreedingFormulaDecreaseEssenceChance = configEntry11.Value
+			};
+		}
+
+		// Token: 0x0600003C RID: 60 RVA: 0x00003058 File Offset: 0x00001258
+		public EssenceConfigValues GetEssenceConfigValues()
+		{
+			Dictionary<ETrait, List<UpgradeAttributeInfo>> dictionary = new Dictionary<ETrait, List<UpgradeAttributeInfo>>();
+			foreach (IEssenceData essenceData in GameData.EssencesDataList)
+			{
+				List<UpgradeAttributeInfo> attributesForEssence = this.GetAttributesForEssence(essenceData);
+				dictionary.Add(essenceData.ReplacedTrait, attributesForEssence);
+			}
+			return new EssenceConfigValues
+			{
+				EssenceDataAttributes = dictionary
+			};
+		}
+
+		// Token: 0x0600003D RID: 61 RVA: 0x000030CC File Offset: 0x000012CC
+		public MarketConfigValues GetMarketConfigValues()
+		{
+			ConfigEntry<int> configEntry = this.ConfigFile.Bind<int>(new ConfigDefinition("2. Market Spawn Values", "Max Essence Value"), 1, new ConfigDescription("Maximum essence value that can spawn in the market.", null, Array.Empty<object>()));
+			ConfigEntry<int> configEntry2 = this.ConfigFile.Bind<int>(new ConfigDefinition("2. Market Spawn Values", "Min Essence Value"), 1, new ConfigDescription("Minimum essence value that can spawn in the market.", null, Array.Empty<object>()));
+			return new MarketConfigValues
+			{
+				EssenceMaxValue = configEntry.Value,
+				EssenceMinValue = configEntry2.Value
+			};
+		}
+
+		// Token: 0x0600003E RID: 62 RVA: 0x00003150 File Offset: 0x00001350
+		private List<UpgradeAttributeInfo> GetAttributesForEssence(IEssenceData essenceData)
+		{
+			IEnumerable<EAttributeType> enumerable = from EAttributeType attribute in Enum.GetValues(typeof(EAttributeType))
+				where attribute > EAttributeType.Unknown
+				select attribute;
+			List<UpgradeAttributeInfo> defaultEssenceAttributes = DefaultEssenceAttributes.GetDefaultEssenceAttributes(essenceData.ReplacedTrait);
+			List<UpgradeAttributeInfo> list = new List<UpgradeAttributeInfo>();
+			foreach (EAttributeType eattributeType in enumerable)
+			{
+				UpgradeAttributeInfo singleAttribute = this.GetSingleAttribute(essenceData, eattributeType, defaultEssenceAttributes);
+				if (singleAttribute != null)
+				{
+					list.Add(singleAttribute);
+				}
+			}
+			return list;
+		}
+
+		// Token: 0x0600003F RID: 63 RVA: 0x000031F4 File Offset: 0x000013F4
+		private UpgradeAttributeInfo GetSingleAttribute(IEssenceData essenceData, EAttributeType attribute, List<UpgradeAttributeInfo> defaultValues)
+		{
+			UpgradeAttributeInfo upgradeAttributeInfo = defaultValues.Where((UpgradeAttributeInfo val) => val.Attribute == attribute).FirstOrDefault<UpgradeAttributeInfo>();
+			if (upgradeAttributeInfo == null)
+			{
+				upgradeAttributeInfo = new UpgradeAttributeInfo
+				{
+					Attribute = attribute,
+					UpgradeValue = 0f,
+					UpgradePointsPerValue = 0f
+				};
+			}
+			ConfigEntry<float> configEntry = this.ConfigFile.Bind<float>(new ConfigDefinition("3. Essence Attributes", string.Format("{0}.{1}.Increment amount", essenceData.Name, attribute)), upgradeAttributeInfo.UpgradeValue, new ConfigDescription(string.Format("How much the value increases. A value of 0 means {0} is never increased by this essence.", attribute), null, Array.Empty<object>()));
+			ConfigEntry<float> configEntry2 = this.ConfigFile.Bind<float>(new ConfigDefinition("3. Essence Attributes", string.Format("{0}.{1}.Increment intervall", essenceData.Name, attribute)), upgradeAttributeInfo.UpgradePointsPerValue, new ConfigDescription("The intervall at which the value increases. E.g. a value of 2 means every two levels of " + essenceData.Name + " essence\n" + string.Format("the {0} is increased by 'Increment amount'. A value of 0 means {1} is never increased by this essence.", attribute, attribute), null, Array.Empty<object>()));
+			return new UpgradeAttributeInfo
+			{
+				Attribute = attribute,
+				UpgradeValue = configEntry.Value,
+				UpgradePointsPerValue = configEntry2.Value
+			};
+		}
+
+		// Token: 0x0400000E RID: 14
+		private const string GeneralSectionName = "1. General Config Values";
+
+		// Token: 0x0400000F RID: 15
+		private const string EssenceDataSectionName = "3. Essence Attributes";
+
+		// Token: 0x04000010 RID: 16
+		private const string MarketSectionName = "2. Market Spawn Values";
+
+		// Token: 0x04000011 RID: 17
+		private readonly ConfigFile ConfigFile;
+	}
+}

@@ -1,0 +1,13 @@
+using System;
+
+namespace CBforDummies.Configuration
+{
+	// Token: 0x02000018 RID: 24
+	public enum EssenceInheritanceType
+	{
+		// Token: 0x04000014 RID: 20
+		Additive,
+		// Token: 0x04000015 RID: 21
+		Complex_Breeding
+	}
+}

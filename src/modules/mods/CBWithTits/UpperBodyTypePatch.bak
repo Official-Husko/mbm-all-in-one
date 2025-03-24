@@ -1,0 +1,29 @@
+using System;
+using System.Runtime.CompilerServices;
+using HarmonyLib;
+using MBMScripts;
+
+namespace CBwithTits
+{
+	// Token: 0x02000009 RID: 9
+	[HarmonyPatch]
+	public class UpperBodyTypePatch
+	{
+		// Token: 0x06000013 RID: 19 RVA: 0x00002474 File Offset: 0x00000674
+		[NullableContext(1)]
+		[HarmonyAfter(new string[] { "mbm.complexbreeding" })]
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(Character), "UpperBodyType", MethodType.Getter)]
+		public static void Postfix(Character __instance, ref int __result)
+		{
+			if (!__instance.IsChild)
+			{
+				EFigure figure = __instance.Figure;
+				if (figure == EFigure.Girl || figure == EFigure.Woman)
+				{
+					__result = 1;
+				}
+			}
+		}
+	}
+}

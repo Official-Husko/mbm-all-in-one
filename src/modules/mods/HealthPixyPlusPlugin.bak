@@ -1,0 +1,654 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using BepInEx;
+using BepInEx.Configuration;
+using BepInEx.Core.Logging.Interpolation;
+using BepInEx.Logging;
+using BepInEx.Unity.Mono;
+using HarmonyLib;
+using MBMModsServices;
+using MBMScripts;
+
+namespace HealthPixyPlus
+{
+	// Token: 0x02000006 RID: 6
+	[NullableContext(1)]
+	[Nullable(0)]
+	[BepInPlugin("com.SoapBoxHero.HealthPixyPlus", "HealthPixyPlus", "2.0.0")]
+	[BepInDependency("com.Memacile.SoapBoxHero.MBMModsServices", BepInDependency.DependencyFlags.HardDependency)]
+	public class HealthPixyPlusPlugin : BaseUnityPlugin
+	{
+		// Token: 0x17000001 RID: 1
+		// (get) Token: 0x06000006 RID: 6 RVA: 0x0000209D File Offset: 0x0000029D
+		public static IDictionary<int, Female> Females
+		{
+			get
+			{
+				return CharacterAccessTool.Females;
+			}
+		}
+
+		// Token: 0x17000002 RID: 2
+		// (get) Token: 0x06000007 RID: 7 RVA: 0x000020A4 File Offset: 0x000002A4
+		[Nullable(2)]
+		public static PlayData PD
+		{
+			[NullableContext(2)]
+			get
+			{
+				return ToolsPlugin.PD;
+			}
+		}
+
+		// Token: 0x17000003 RID: 3
+		// (get) Token: 0x06000008 RID: 8 RVA: 0x000020AB File Offset: 0x000002AB
+		[Nullable(0)]
+		public static ValueTuple<int, int> NoReturnTuple
+		{
+			[NullableContext(0)]
+			get
+			{
+				return new ValueTuple<int, int>(-1, -1);
+			}
+		}
+
+		// Token: 0x06000009 RID: 9 RVA: 0x000020B4 File Offset: 0x000002B4
+		[HarmonyPatch(typeof(Unit), "IsDragging", MethodType.Setter)]
+		[HarmonyPostfix]
+		public static void OnDragUnit(Unit __instance)
+		{
+			if (__instance != null && __instance.IsDragging && __instance.Sector == ESector.Female)
+			{
+				HealthPixyPlusPlugin.ClearUnitState(__instance.UnitId);
+			}
+		}
+
+		// Token: 0x0600000A RID: 10 RVA: 0x000020D5 File Offset: 0x000002D5
+		[HarmonyPatch(typeof(GameManager), "Load")]
+		[HarmonyPostfix]
+		public static void BeforeLoad()
+		{
+			HealthPixyPlusPlugin.ClearState();
+		}
+
+		// Token: 0x0600000B RID: 11 RVA: 0x000020DC File Offset: 0x000002DC
+		[HarmonyPatch(typeof(GameManager), "Save")]
+		[HarmonyPrefix]
+		public static void BeforeSave()
+		{
+			HealthPixyPlusPlugin.ResetState();
+		}
+
+		// Token: 0x0600000C RID: 12 RVA: 0x000020E4 File Offset: 0x000002E4
+		public HealthPixyPlusPlugin()
+		{
+			HealthPixyPlusPlugin.log = base.Logger;
+			this.AutoRestFromBreedingRoomEnabled = base.Config.Bind(new ConfigInfo<bool>
+			{
+				Section = "AutoRestFromBreedingRoom",
+				Name = "Enabled",
+				Description = "If enabled, forces low health event to trick pixies into moving the girl to a cage.",
+				DefaultValue = true
+			});
+			this.AutoRestFromBreedingRoomEnabled.SettingChanged += this.Enabled_Changed;
+			this.AutoRestEnabled = base.Config.Bind(new ConfigInfo<bool>
+			{
+				Section = "AutoRest",
+				Name = "Enabled",
+				Description = "If enabled, moves girls to a cages after milking and birth.",
+				DefaultValue = true
+			});
+			this.AutoRestEnabled.SettingChanged += this.Enabled_Changed;
+		}
+
+		// Token: 0x0600000D RID: 13 RVA: 0x000021C7 File Offset: 0x000003C7
+		private void Enabled_Changed([Nullable(2)] object sender, EventArgs e)
+		{
+			this.ConfigureActions();
+		}
+
+		// Token: 0x0600000E RID: 14 RVA: 0x000021D0 File Offset: 0x000003D0
+		public void ConfigureActions()
+		{
+			if (this.AutoRestFromBreedingRoomEnabled.Value)
+			{
+				this.EnabledActions.Add(new Action<Female>(this.RestForcibly));
+				this.EnabledActions.Add(new Action<Female>(this.UndoForcedHealthReduction));
+				ManualLogSource manualLogSource = HealthPixyPlusPlugin.log;
+				if (manualLogSource != null)
+				{
+					manualLogSource.LogMessage("Enabled AutoRestFromBreedingRoom action.");
+				}
+			}
+			else
+			{
+				this.EnabledActions.Remove(new Action<Female>(this.RestForcibly));
+				this.EnabledActions.Remove(new Action<Female>(this.UndoForcedHealthReduction));
+				ManualLogSource manualLogSource2 = HealthPixyPlusPlugin.log;
+				if (manualLogSource2 != null)
+				{
+					manualLogSource2.LogMessage("Disabled AutoRestFromBreedingRoom action.");
+				}
+			}
+			if (this.AutoRestEnabled.Value)
+			{
+				this.EnabledActions.Add(new Action<Female>(this.PreRestIfAvailable));
+				this.EnabledActions.Add(new Action<Female>(this.RestIfAvailable));
+				this.EnabledActions.Add(new Action<Female>(this.UndoForcedRestAtIdle));
+				ManualLogSource manualLogSource3 = HealthPixyPlusPlugin.log;
+				if (manualLogSource3 != null)
+				{
+					manualLogSource3.LogMessage("Enabled AutoRestEnabled action.");
+				}
+			}
+			else
+			{
+				this.EnabledActions.Remove(new Action<Female>(this.PreRestIfAvailable));
+				this.EnabledActions.Remove(new Action<Female>(this.RestIfAvailable));
+				this.EnabledActions.Remove(new Action<Female>(this.UndoForcedRestAtIdle));
+				ManualLogSource manualLogSource4 = HealthPixyPlusPlugin.log;
+				if (manualLogSource4 != null)
+				{
+					manualLogSource4.LogMessage("Disabled AutoRestFromBreedingRoom action.");
+				}
+			}
+			if (this.AutoRestFromBreedingRoomEnabled.Value || this.AutoRestEnabled.Value)
+			{
+				ICollection<Action<Female>> enabledActions = this.EnabledActions;
+				Action<Female> action;
+				if ((action = HealthPixyPlusPlugin.<>O.<0>__ClearReservedRoom) == null)
+				{
+					action = (HealthPixyPlusPlugin.<>O.<0>__ClearReservedRoom = new Action<Female>(HealthPixyPlusPlugin.ClearReservedRoom));
+				}
+				if (!enabledActions.Contains(action))
+				{
+					ICollection<Action<Female>> enabledActions2 = this.EnabledActions;
+					Action<Female> action2;
+					if ((action2 = HealthPixyPlusPlugin.<>O.<0>__ClearReservedRoom) == null)
+					{
+						action2 = (HealthPixyPlusPlugin.<>O.<0>__ClearReservedRoom = new Action<Female>(HealthPixyPlusPlugin.ClearReservedRoom));
+					}
+					enabledActions2.Add(action2);
+					return;
+				}
+			}
+			else if (!this.AutoRestFromBreedingRoomEnabled.Value && !this.AutoRestEnabled.Value)
+			{
+				ICollection<Action<Female>> enabledActions3 = this.EnabledActions;
+				Action<Female> action3;
+				if ((action3 = HealthPixyPlusPlugin.<>O.<0>__ClearReservedRoom) == null)
+				{
+					action3 = (HealthPixyPlusPlugin.<>O.<0>__ClearReservedRoom = new Action<Female>(HealthPixyPlusPlugin.ClearReservedRoom));
+				}
+				if (enabledActions3.Contains(action3))
+				{
+					ICollection<Action<Female>> enabledActions4 = this.EnabledActions;
+					Action<Female> action4;
+					if ((action4 = HealthPixyPlusPlugin.<>O.<0>__ClearReservedRoom) == null)
+					{
+						action4 = (HealthPixyPlusPlugin.<>O.<0>__ClearReservedRoom = new Action<Female>(HealthPixyPlusPlugin.ClearReservedRoom));
+					}
+					enabledActions4.Remove(action4);
+				}
+			}
+		}
+
+		// Token: 0x0600000F RID: 15 RVA: 0x00002410 File Offset: 0x00000610
+		private void Awake()
+		{
+			this.ConfigureActions();
+			try
+			{
+				ManualLogSource manualLogSource = HealthPixyPlusPlugin.log;
+				if (manualLogSource != null)
+				{
+					bool flag;
+					BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(30, 1, out flag);
+					if (flag)
+					{
+						bepInExInfoLogInterpolatedStringHandler.AppendLiteral("Installing ");
+						bepInExInfoLogInterpolatedStringHandler.AppendFormatted<string>("HealthPixyPlus");
+						bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" Harmony patches...");
+					}
+					manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+				}
+				new Harmony("com.SoapBoxHero.HealthPixyPlus").PatchAll(typeof(HealthPixyPlusPlugin));
+				manualLogSource = HealthPixyPlusPlugin.log;
+				if (manualLogSource != null)
+				{
+					bool flag;
+					BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(28, 1, out flag);
+					if (flag)
+					{
+						bepInExInfoLogInterpolatedStringHandler.AppendFormatted<string>("HealthPixyPlus");
+						bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" Harmony patches successful.");
+					}
+					manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+				}
+				ToolsPlugin.RegisterPeriodicAction(1f, new Action(this.Run), true);
+				manualLogSource = HealthPixyPlusPlugin.log;
+				if (manualLogSource != null)
+				{
+					bool flag;
+					BepInExMessageLogInterpolatedStringHandler bepInExMessageLogInterpolatedStringHandler = new BepInExMessageLogInterpolatedStringHandler(38, 1, out flag);
+					if (flag)
+					{
+						bepInExMessageLogInterpolatedStringHandler.AppendLiteral("Registered ");
+						bepInExMessageLogInterpolatedStringHandler.AppendFormatted<string>("HealthPixyPlus");
+						bepInExMessageLogInterpolatedStringHandler.AppendLiteral(" action for period of 1sec.");
+					}
+					manualLogSource.LogMessage(bepInExMessageLogInterpolatedStringHandler);
+				}
+			}
+			catch
+			{
+				ManualLogSource manualLogSource = HealthPixyPlusPlugin.log;
+				if (manualLogSource != null)
+				{
+					bool flag;
+					BepInExErrorLogInterpolatedStringHandler bepInExErrorLogInterpolatedStringHandler = new BepInExErrorLogInterpolatedStringHandler(24, 1, out flag);
+					if (flag)
+					{
+						bepInExErrorLogInterpolatedStringHandler.AppendFormatted<string>("HealthPixyPlus");
+						bepInExErrorLogInterpolatedStringHandler.AppendLiteral(" Harmony patches failed!");
+					}
+					manualLogSource.LogError(bepInExErrorLogInterpolatedStringHandler);
+				}
+			}
+		}
+
+		// Token: 0x06000010 RID: 16 RVA: 0x00002554 File Offset: 0x00000754
+		public void Run()
+		{
+			if (this.IsPixiesUnavailible())
+			{
+				return;
+			}
+			foreach (Female female in CharacterAccessTool.GetOwnedFemales())
+			{
+				if (!this.IsFemalePixyHealthDisabled(female))
+				{
+					foreach (Action<Female> action in this.EnabledActions)
+					{
+						if (action != null)
+						{
+							action(female);
+						}
+					}
+				}
+			}
+		}
+
+		// Token: 0x06000011 RID: 17 RVA: 0x000025EC File Offset: 0x000007EC
+		public unsafe bool IsPixiesUnavailible()
+		{
+			if (HealthPixyPlusPlugin.PD == null || HealthPixyPlusPlugin.PD.FloraPixyCount <= 0 || HealthPixyPlusPlugin.PD.PixyCountInAction == *HealthPixyPlusPlugin.m_PixyCountRef(GameManager.Instance.PlayerData))
+			{
+				return true;
+			}
+			if (!HealthPixyPlusPlugin.PD.FloraPixyHealth)
+			{
+				if (HealthPixyPlusPlugin.PreviousFloraPixyHealth)
+				{
+					HealthPixyPlusPlugin.ResetState();
+				}
+				HealthPixyPlusPlugin.PreviousFloraPixyHealth = HealthPixyPlusPlugin.PD.FloraPixyHealth;
+				return true;
+			}
+			HealthPixyPlusPlugin.PreviousFloraPixyHealth = HealthPixyPlusPlugin.PD.FloraPixyHealth;
+			return false;
+		}
+
+		// Token: 0x06000012 RID: 18 RVA: 0x0000266C File Offset: 0x0000086C
+		public bool IsFemalePixyHealthDisabled(Female female)
+		{
+			if (!female.PixyHealth)
+			{
+				bool flag;
+				if (HealthPixyPlusPlugin.FemalePreviousPixyHealth.TryGetValue(female.UnitId, out flag) && flag)
+				{
+					HealthPixyPlusPlugin.ResetFemaleState(female);
+				}
+				HealthPixyPlusPlugin.FemalePreviousPixyHealth[female.UnitId] = female.PixyHealth;
+				return true;
+			}
+			HealthPixyPlusPlugin.FemalePreviousPixyHealth[female.UnitId] = female.PixyHealth;
+			return false;
+		}
+
+		// Token: 0x06000013 RID: 19 RVA: 0x000026CC File Offset: 0x000008CC
+		public void PreRestIfAvailable(Female female)
+		{
+			if (HealthPixyPlusPlugin.restingReturnBlocks.ContainsKey(female.UnitId))
+			{
+				return;
+			}
+			if (!HealthPixyPlusPlugin.PreReadyToRestStates.Contains(female.State))
+			{
+				return;
+			}
+			if (female.PreviousRoomIdStack.Count == 0 || female.PreviousSeatStack.Count == 0)
+			{
+				HealthPixyPlusPlugin.restingReturnBlocks.Add(female.UnitId, HealthPixyPlusPlugin.NoReturnTuple);
+				return;
+			}
+			int num = female.PreviousRoomIdStack.Pop();
+			int num2 = female.PreviousSeatStack.Pop();
+			HealthPixyPlusPlugin.restingReturnBlocks.Add(female.UnitId, new ValueTuple<int, int>(num, num2));
+		}
+
+		// Token: 0x06000014 RID: 20 RVA: 0x00002760 File Offset: 0x00000960
+		public void RestIfAvailable(Female female)
+		{
+			if (HealthPixyPlusPlugin.restingReturnOverrides.ContainsKey(female.UnitId))
+			{
+				return;
+			}
+			ValueTuple<Room, int> valueTuple;
+			if (HealthPixyPlusPlugin.ReadyToRestStates.Contains(female.State) && this.TryGetSeatInRoomByType(ERoomType.SlaveCage, female, out valueTuple))
+			{
+				ValueTuple<int, int> valueTuple2;
+				if (HealthPixyPlusPlugin.restingReturnBlocks.TryGetValue(female.UnitId, out valueTuple2))
+				{
+					HealthPixyPlusPlugin.restingReturnOverrides.Add(female.UnitId, valueTuple2);
+					HealthPixyPlusPlugin.restingReturnBlocks.Remove(female.UnitId);
+					female.PreviousRoomIdStack.Push(valueTuple.Item1.UnitId);
+					female.PreviousSeatStack.Push(valueTuple.Item2);
+					return;
+				}
+				if (female.PreviousRoomIdStack.Count == 0 || female.PreviousSeatStack.Count == 0)
+				{
+					HealthPixyPlusPlugin.restingReturnOverrides.Add(female.UnitId, HealthPixyPlusPlugin.NoReturnTuple);
+					female.PreviousRoomIdStack.Push(valueTuple.Item1.UnitId);
+					female.PreviousSeatStack.Push(valueTuple.Item2);
+					return;
+				}
+				int num = female.PreviousRoomIdStack.Pop();
+				int num2 = female.PreviousSeatStack.Pop();
+				HealthPixyPlusPlugin.restingReturnOverrides.Add(female.UnitId, new ValueTuple<int, int>(num, num2));
+				female.PreviousRoomIdStack.Push(valueTuple.Item1.UnitId);
+				female.PreviousSeatStack.Push(valueTuple.Item2);
+			}
+		}
+
+		// Token: 0x06000015 RID: 21 RVA: 0x000028B0 File Offset: 0x00000AB0
+		public void RestForcibly(Female female)
+		{
+			if (HealthPixyPlusPlugin.restingReturnOverrides.ContainsKey(female.UnitId) || HealthPixyPlusPlugin.stolenStats.ContainsKey(female.UnitId))
+			{
+				return;
+			}
+			if (female.Room.RoomType == ERoomType.BreedingRoom && female.TrainingLevel < 5 && female.State == EState.Rest && !female.IsPregnant)
+			{
+				HealthPixyPlusPlugin.stolenStats.Add(female.UnitId, new ValueTuple<float, int, int>(female.Health, female.Training, female.TrainingLevel));
+				HealthPixyPlusPlugin.restingReturnOverrides.Add(female.UnitId, new ValueTuple<int, int>(female.Room.UnitId, female.Seat));
+				female.Training = 10;
+				female.TrainingLevel = 1;
+				female.Health = female.MaxHealth * 0.1f;
+			}
+		}
+
+		// Token: 0x06000016 RID: 22 RVA: 0x00002980 File Offset: 0x00000B80
+		public void UndoForcedHealthReduction(Female female)
+		{
+			ValueTuple<float, int, int> valueTuple;
+			if (!HealthPixyPlusPlugin.stolenStats.TryGetValue(female.UnitId, out valueTuple))
+			{
+				return;
+			}
+			if (female.Room.RoomType != ERoomType.SlaveCage)
+			{
+				return;
+			}
+			female.Health = valueTuple.Item1;
+			female.Training = valueTuple.Item2;
+			female.TrainingLevel = valueTuple.Item3;
+			HealthPixyPlusPlugin.stolenStats.Remove(female.UnitId);
+			ValueTuple<int, int> valueTuple2;
+			if (HealthPixyPlusPlugin.restingReturnOverrides.TryGetValue(female.UnitId, out valueTuple2))
+			{
+				female.PreviousRoomIdStack.Clear();
+				female.PreviousSeatStack.Clear();
+			}
+		}
+
+		// Token: 0x06000017 RID: 23 RVA: 0x00002A14 File Offset: 0x00000C14
+		public void UndoForcedRestAtIdle(Female female)
+		{
+			ValueTuple<int, int> valueTuple;
+			if (!HealthPixyPlusPlugin.restingReturnOverrides.TryGetValue(female.UnitId, out valueTuple))
+			{
+				return;
+			}
+			if (female.Room.RoomType != ERoomType.SlaveCage)
+			{
+				return;
+			}
+			if (female.State != EState.Idle)
+			{
+				return;
+			}
+			if (valueTuple.Item1 != HealthPixyPlusPlugin.NoReturnTuple.Item1)
+			{
+				female.PreviousRoomIdStack.Push(valueTuple.Item1);
+				female.PreviousSeatStack.Push(valueTuple.Item2);
+			}
+			HealthPixyPlusPlugin.restingReturnOverrides.Remove(female.UnitId);
+		}
+
+		// Token: 0x06000018 RID: 24 RVA: 0x00002A95 File Offset: 0x00000C95
+		public static void ClearReservedRoom(Female female)
+		{
+			if (!HealthPixyPlusPlugin.reservedRooms.ContainsKey(female.UnitId))
+			{
+				return;
+			}
+			if (female.Room.RoomType != ERoomType.SlaveCage)
+			{
+				return;
+			}
+			HealthPixyPlusPlugin.reservedRooms.Remove(female.UnitId);
+		}
+
+		// Token: 0x06000019 RID: 25 RVA: 0x00002ACB File Offset: 0x00000CCB
+		public static void ClearState()
+		{
+			HealthPixyPlusPlugin.restingReturnBlocks.Clear();
+			HealthPixyPlusPlugin.restingReturnOverrides.Clear();
+			HealthPixyPlusPlugin.stolenStats.Clear();
+			HealthPixyPlusPlugin.reservedRooms.Clear();
+		}
+
+		// Token: 0x0600001A RID: 26 RVA: 0x00002AF8 File Offset: 0x00000CF8
+		public static void ClearUnitState(int id)
+		{
+			HealthPixyPlusPlugin.restingReturnBlocks.Remove(id);
+			HealthPixyPlusPlugin.restingReturnOverrides.Remove(id);
+			HealthPixyPlusPlugin.reservedRooms.Remove(id);
+			Female female;
+			if (!HealthPixyPlusPlugin.Females.TryGetValue(id, out female))
+			{
+				HealthPixyPlusPlugin.stolenStats.Remove(id);
+			}
+			if (female == null)
+			{
+				return;
+			}
+			ValueTuple<float, int, int> valueTuple;
+			if (HealthPixyPlusPlugin.stolenStats.TryGetValue(id, out valueTuple))
+			{
+				female.Health = valueTuple.Item1;
+				female.Training = valueTuple.Item2;
+			}
+			female.PreviousRoomIdStack.Clear();
+			female.PreviousSeatStack.Clear();
+			female.PixyIsWaiting = false;
+		}
+
+		// Token: 0x0600001B RID: 27 RVA: 0x00002B8C File Offset: 0x00000D8C
+		public static void ResetState()
+		{
+			foreach (KeyValuePair<int, Female> keyValuePair in HealthPixyPlusPlugin.Females)
+			{
+				HealthPixyPlusPlugin.ResetFemaleState(keyValuePair.Value);
+			}
+			HealthPixyPlusPlugin.restingReturnBlocks.Clear();
+			HealthPixyPlusPlugin.restingReturnOverrides.Clear();
+			HealthPixyPlusPlugin.stolenStats.Clear();
+			HealthPixyPlusPlugin.reservedRooms.Clear();
+		}
+
+		// Token: 0x0600001C RID: 28 RVA: 0x00002C08 File Offset: 0x00000E08
+		public static void ResetFemaleState(Female female)
+		{
+			if (female == null)
+			{
+				return;
+			}
+			female.PreviousRoomIdStack.Clear();
+			female.PreviousSeatStack.Clear();
+			ValueTuple<int, int> valueTuple;
+			if (HealthPixyPlusPlugin.restingReturnOverrides.TryGetValue(female.UnitId, out valueTuple))
+			{
+				female.PreviousRoomIdStack.Push(valueTuple.Item1);
+				female.PreviousSeatStack.Push(valueTuple.Item2);
+				HealthPixyPlusPlugin.restingReturnOverrides.Remove(female.UnitId);
+			}
+			ValueTuple<int, int> valueTuple2;
+			if (HealthPixyPlusPlugin.restingReturnBlocks.TryGetValue(female.UnitId, out valueTuple2))
+			{
+				female.PreviousRoomIdStack.Push(valueTuple2.Item1);
+				female.PreviousSeatStack.Push(valueTuple2.Item2);
+				HealthPixyPlusPlugin.restingReturnBlocks.Remove(female.UnitId);
+			}
+			ValueTuple<float, int, int> valueTuple3;
+			if (HealthPixyPlusPlugin.stolenStats.TryGetValue(female.UnitId, out valueTuple3))
+			{
+				female.Health = valueTuple3.Item1;
+				female.Training = valueTuple3.Item2;
+				HealthPixyPlusPlugin.stolenStats.Remove(female.UnitId);
+			}
+			HealthPixyPlusPlugin.reservedRooms.Remove(female.UnitId);
+		}
+
+		// Token: 0x0600001D RID: 29 RVA: 0x00002D0C File Offset: 0x00000F0C
+		public unsafe bool TryGetSeatInRoomByType(ERoomType roomType, Character character, [TupleElementNames(new string[] { "room", "seat" })] [Nullable(new byte[] { 0, 1 })] out ValueTuple<Room, int> result)
+		{
+			result = new ValueTuple<Room, int>(new Room(0), 0);
+			if (HealthPixyPlusPlugin.PD == null)
+			{
+				return false;
+			}
+			using (List<Room>.Enumerator enumerator = HealthPixyPlusPlugin.PD.GetClosedRoomList(roomType, character.Position, false).GetEnumerator())
+			{
+				while (enumerator.MoveNext())
+				{
+					Room room = enumerator.Current;
+					if (room != null && *HealthPixyPlusPlugin.m_AllocatableSeatCountRef(room) != 0)
+					{
+						int? seat = (int?)HealthPixyPlusPlugin.GetEmptySeatInRoomRef(HealthPixyPlusPlugin.PD, new object[] { room.Sector, room.Slot });
+						if (!HealthPixyPlusPlugin.reservedRooms.Any(delegate([TupleElementNames(new string[] { "roomid", "seat" })] KeyValuePair<int, ValueTuple<int, int>> reserve)
+						{
+							if (reserve.Value.Item1 == room.UnitId)
+							{
+								int item = reserve.Value.Item2;
+								int? seat2 = seat;
+								return (item == seat2.GetValueOrDefault()) & (seat2 != null);
+							}
+							return false;
+						}))
+						{
+							if (seat != null)
+							{
+								result = new ValueTuple<Room, int>(room, seat.Value);
+							}
+							return true;
+						}
+					}
+				}
+			}
+			return false;
+		}
+
+		// Token: 0x04000004 RID: 4
+		public const string AUTHOR = "SoapBoxHero";
+
+		// Token: 0x04000005 RID: 5
+		public const string GUID = "com.SoapBoxHero.HealthPixyPlus";
+
+		// Token: 0x04000006 RID: 6
+		[Nullable(2)]
+		public static ManualLogSource log;
+
+		// Token: 0x04000007 RID: 7
+		public readonly ConfigEntry<bool> AutoRestFromBreedingRoomEnabled;
+
+		// Token: 0x04000008 RID: 8
+		public readonly ConfigEntry<bool> AutoRestEnabled;
+
+		// Token: 0x04000009 RID: 9
+		[TupleElementNames(new string[] { "roomid", "seat" })]
+		[Nullable(new byte[] { 1, 0 })]
+		public static IDictionary<int, ValueTuple<int, int>> restingReturnOverrides = new Dictionary<int, ValueTuple<int, int>>();
+
+		// Token: 0x0400000A RID: 10
+		[TupleElementNames(new string[] { "roomid", "seat" })]
+		[Nullable(new byte[] { 1, 0 })]
+		public static IDictionary<int, ValueTuple<int, int>> restingReturnBlocks = new Dictionary<int, ValueTuple<int, int>>();
+
+		// Token: 0x0400000B RID: 11
+		[TupleElementNames(new string[] { "roomid", "seat" })]
+		[Nullable(new byte[] { 1, 0 })]
+		public static IDictionary<int, ValueTuple<int, int>> reservedRooms = new Dictionary<int, ValueTuple<int, int>>();
+
+		// Token: 0x0400000C RID: 12
+		[TupleElementNames(new string[] { "health", "training", "traininglevel" })]
+		[Nullable(new byte[] { 1, 0 })]
+		public static IDictionary<int, ValueTuple<float, int, int>> stolenStats = new Dictionary<int, ValueTuple<float, int, int>>();
+
+		// Token: 0x0400000D RID: 13
+		public static IDictionary<int, bool> FemalePreviousPixyHealth = new Dictionary<int, bool>();
+
+		// Token: 0x0400000E RID: 14
+		public static IList<EState> PreReadyToRestStates = new List<EState>
+		{
+			EState.Birth,
+			EState.BirthDrained,
+			EState.MilkStart
+		};
+
+		// Token: 0x0400000F RID: 15
+		public static IList<EState> ReadyToRestStates = new List<EState>
+		{
+			EState.AfterBirth,
+			EState.AfterBirthDrained,
+			EState.MilkIdle
+		};
+
+		// Token: 0x04000010 RID: 16
+		public static bool PreviousFloraPixyHealth = false;
+
+		// Token: 0x04000011 RID: 17
+		public IList<Action<Female>> EnabledActions = new List<Action<Female>>();
+
+		// Token: 0x04000012 RID: 18
+		private static AccessTools.FieldRef<PlayData, int> m_PixyCountRef = AccessTools.FieldRefAccess<PlayData, int>("m_PixyCount");
+
+		// Token: 0x04000013 RID: 19
+		private static readonly AccessTools.FieldRef<Room, int> m_AllocatableSeatCountRef = AccessTools.FieldRefAccess<Room, int>("m_AllocatableSeatCount");
+
+		// Token: 0x04000014 RID: 20
+		private static readonly FastInvokeHandler GetEmptySeatInRoomRef = MethodInvoker.GetHandler(AccessTools.Method(typeof(PlayData), "GetEmptySeatInRoom", null, null), false);
+
+		// Token: 0x02000008 RID: 8
+		[CompilerGenerated]
+		private static class <>O
+		{
+			// Token: 0x04000018 RID: 24
+			[Nullable(new byte[] { 0, 1 })]
+			public static Action<Female> <0>__ClearReservedRoom;
+		}
+	}
+}

@@ -1,0 +1,17 @@
+using System;
+using HarmonyLib;
+using MBMScripts;
+
+namespace CBforDummies.Patches
+{
+	// Token: 0x0200000D RID: 13
+	[HarmonyPatch(typeof(ConfigData), "PrivateEstateCost", MethodType.Getter)]
+	public class PrivateEstateCostPatch
+	{
+		// Token: 0x06000022 RID: 34 RVA: 0x0000251B File Offset: 0x0000071B
+		public static void Postfix(ref int __result)
+		{
+			__result = CBforDummiesPlugin.GeneralConfig.MansionPrice;
+		}
+	}
+}

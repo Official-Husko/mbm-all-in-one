@@ -1,0 +1,45 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using ComplexBreeding.Essences;
+using MBMScripts;
+
+namespace CBforDummies.Configuration
+{
+	// Token: 0x02000017 RID: 23
+	[NullableContext(1)]
+	[Nullable(0)]
+	public class EssenceConfigValues
+	{
+		// Token: 0x17000005 RID: 5
+		// (get) Token: 0x06000042 RID: 66 RVA: 0x00003799 File Offset: 0x00001999
+		// (set) Token: 0x06000043 RID: 67 RVA: 0x000037A1 File Offset: 0x000019A1
+		public Dictionary<ETrait, List<UpgradeAttributeInfo>> EssenceDataAttributes { get; internal set; }
+
+		// Token: 0x06000044 RID: 68 RVA: 0x000037AC File Offset: 0x000019AC
+		internal ICollection<UpgradeAttributeInfo> GetEssenceAttributeInfo(ETrait essenceTrait)
+		{
+			if (this.EssenceDataAttributes.ContainsKey(essenceTrait))
+			{
+				return this.EssenceDataAttributes[essenceTrait].Where((UpgradeAttributeInfo attribute) => attribute.UpgradeValue != 0f && attribute.UpgradePointsPerValue != 0f).ToList<UpgradeAttributeInfo>();
+			}
+			return new List<UpgradeAttributeInfo>();
+		}
+
+		// Token: 0x06000045 RID: 69 RVA: 0x00003804 File Offset: 0x00001A04
+		private string PrintEssenceAttributes(ICollection<UpgradeAttributeInfo> essenceData)
+		{
+			string text = "{\n";
+			int num = 1;
+			foreach (UpgradeAttributeInfo upgradeAttributeInfo in essenceData)
+			{
+				text += string.Format("\t{0}. Attribute: {1}\n", num, upgradeAttributeInfo.Attribute);
+				text += string.Format("\t{0}. UpgradeValue: {1}\n", num, upgradeAttributeInfo.UpgradeValue);
+				text += string.Format("\t{0}. UpgradePointsPerValue: {1}\n", num, upgradeAttributeInfo.UpgradePointsPerValue);
+			}
+			text += "}\n";
+			return text;
+		}
+	}
+}

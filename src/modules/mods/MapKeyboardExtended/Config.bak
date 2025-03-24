@@ -1,0 +1,103 @@
+using System;
+using System.Runtime.CompilerServices;
+using BepInEx.Configuration;
+using UnityEngine;
+
+namespace MapKeyboardExtended
+{
+	// Token: 0x02000008 RID: 8
+	[NullableContext(1)]
+	[Nullable(0)]
+	public class Config
+	{
+		// Token: 0x06000007 RID: 7 RVA: 0x000020D4 File Offset: 0x000002D4
+		public Config(ConfigFile cfg)
+		{
+			this.PluginEnabled = cfg.Bind(new ConfigInfo<bool>
+			{
+				Section = Config.SETTINGS_SECTION,
+				Name = "Keyboard Shortcuts Enabled",
+				Description = "If enabled, allows to use additional keyboard shortcuts.",
+				DefaultValue = true
+			});
+			this.ZoomStep = cfg.Bind(new ConfigInfo<float>
+			{
+				Section = Config.SETTINGS_SECTION,
+				Name = "Zoom Step",
+				Description = "Sets step at which perform zoom.\n(Range: 0.3...3; Default: 1)",
+				DefaultValue = 1f,
+				AcceptableValues = new AcceptableValueRange<float>(0.3f, 3f)
+			});
+			this.ZoomOutKey = cfg.Bind(new ConfigInfo<KeyCode>
+			{
+				Section = Config.SETTINGS_SECTION,
+				Name = "Zoom Out Key",
+				Description = "Keyboard key to zoom out.",
+				DefaultValue = KeyCode.KeypadMinus
+			});
+			this.ZoomInKey = cfg.Bind(new ConfigInfo<KeyCode>
+			{
+				Section = Config.SETTINGS_SECTION,
+				Name = "Zoom In Key",
+				Description = "Keyboard key to zoom in.",
+				DefaultValue = KeyCode.KeypadPlus
+			});
+			this.SellKey = cfg.Bind(new ConfigInfo<KeyCode>
+			{
+				Section = Config.SETTINGS_SECTION,
+				Name = "Sell Key",
+				Description = "Keyboard key to sell highlighted/selected/dragged units.",
+				DefaultValue = KeyCode.Delete
+			});
+			this.BuyKey = cfg.Bind(new ConfigInfo<KeyCode>
+			{
+				Section = Config.SETTINGS_SECTION,
+				Name = "Buy Key",
+				Description = "Keyboard key to buy highlighted/selected/dragged units.",
+				DefaultValue = KeyCode.Insert
+			});
+			this.DismantleKey = cfg.Bind(new ConfigInfo<KeyCode>
+			{
+				Section = Config.SETTINGS_SECTION,
+				Name = "Dismantle Key",
+				Description = "Keyboard key to dismantle highlighted/selected/dragged units.",
+				DefaultValue = KeyCode.End
+			});
+			this.LogToConsole = cfg.Bind(new ConfigInfo<bool>
+			{
+				Section = Config.SETTINGS_SECTION,
+				Name = "Enable debug logging",
+				Description = "Log all keypress events.",
+				DefaultValue = false
+			});
+		}
+
+		// Token: 0x04000009 RID: 9
+		internal static string SETTINGS_SECTION = "Settings";
+
+		// Token: 0x0400000A RID: 10
+		public ConfigEntry<float> ZoomStep;
+
+		// Token: 0x0400000B RID: 11
+		public ConfigEntry<bool> PluginEnabled;
+
+		// Token: 0x0400000C RID: 12
+		public ConfigEntry<KeyCode> ZoomOutKey;
+
+		// Token: 0x0400000D RID: 13
+		public ConfigEntry<KeyCode> ZoomInKey;
+
+		// Token: 0x0400000E RID: 14
+		public ConfigEntry<KeyCode> SellKey;
+
+		// Token: 0x0400000F RID: 15
+		public ConfigEntry<KeyCode> BuyKey;
+
+		// Token: 0x04000010 RID: 16
+		public ConfigEntry<KeyCode> DismantleKey;
+
+		// Token: 0x04000011 RID: 17
+		[Nullable(2)]
+		public ConfigEntry<bool> LogToConsole;
+	}
+}

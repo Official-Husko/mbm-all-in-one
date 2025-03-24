@@ -1,0 +1,105 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using ComplexBreeding.Essences;
+using ComplexBreeding.Essences.Data;
+using HarmonyLib;
+using MBMScripts;
+
+namespace CBforDummies.Patches
+{
+	// Token: 0x0200000E RID: 14
+	[NullableContext(1)]
+	[Nullable(0)]
+	[HarmonyPatch(typeof(ReferenceUnit), "GetString")]
+	public class ReferenceUnitGetStringPatch
+	{
+		// Token: 0x06000024 RID: 36 RVA: 0x00002534 File Offset: 0x00000734
+		[HarmonyAfter(new string[] { "mbm.complexbreeding" })]
+		public static void Postfix(ReferenceUnit __instance, int ___m_UnitDataType, ref string __result)
+		{
+			TargetUnit targetUnit = __instance.Updater.TargetUnit;
+			Character character = ((targetUnit != null) ? targetUnit.Unit : null) as Character;
+			List<IEssenceData> list = new List<IEssenceData>();
+			list.Add(DemonicEssenceData.Data);
+			list.Add(ElementalEssenceData.Data);
+			list.Add(EternalEssenceData.Data);
+			list.Add(FeralEssenceData.Data);
+			list.Add(MagicalEssenceData.Data);
+			list.Add(SacredEssenceData.Data);
+			List<ETrait> list2 = list.Select((IEssenceData e) => e.ReplacedTrait).ToList<ETrait>();
+			if (character == null)
+			{
+				return;
+			}
+			if (___m_UnitDataType == 22)
+			{
+				ETrait trait = character.GetTrait(Updater.Index);
+				character.GetTraitValue(trait);
+				try
+				{
+					if (list2.Contains(trait))
+					{
+						string text = SeqLocalization.Localize(trait.GetName());
+						float traitValue = character.GetTraitValue(trait);
+						float traitUpgradedValue = character.GetTraitUpgradedValue(trait);
+						float num = traitValue + traitUpgradedValue;
+						string text2 = ((num > 0f) ? string.Format(" +{0}", num) : string.Format(" {0}", num));
+						if (character.GetTraitIsUpgraded(trait))
+						{
+							text2 += string.Format(" (Upgraded +{0})", traitUpgradedValue);
+						}
+						__result = string.Format(text, text2);
+					}
+				}
+				catch
+				{
+					__result = trait.GetName();
+				}
+			}
+		}
+
+		// Token: 0x06000025 RID: 37 RVA: 0x000026A4 File Offset: 0x000008A4
+		public static void PostfixTest(ReferenceUnit __instance, int ___m_UnitDataType, ref string __result)
+		{
+			TargetUnit targetUnit = __instance.Updater.TargetUnit;
+			Character character = ((targetUnit != null) ? targetUnit.Unit : null) as Character;
+			if (character == null)
+			{
+				return;
+			}
+			if (___m_UnitDataType == 22)
+			{
+				ETrait trait = character.GetTrait(Updater.Index);
+				int num = (int)character.GetTraitValue(trait);
+				try
+				{
+					if (trait == ETrait.Trait93)
+					{
+						Console.WriteLine(trait.GetName() + ": " + num.ToString());
+						string text = trait.GetName();
+						if (num <= 10)
+						{
+							text = text.Replace("Demonic", "Wicked");
+							__result = SeqLocalization.Localize(string.Format(text, num));
+						}
+						else if (num <= 20)
+						{
+							__result = SeqLocalization.Localize(string.Format(text, num - 10));
+						}
+						else
+						{
+							text = text.Replace("Demonic", "Infernal");
+							__result = SeqLocalization.Localize(string.Format(text, num - 20));
+						}
+					}
+				}
+				catch
+				{
+					__result = trait.GetName();
+				}
+			}
+		}
+	}
+}

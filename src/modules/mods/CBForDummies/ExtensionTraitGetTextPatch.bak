@@ -1,0 +1,20 @@
+using System;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using MBMScripts;
+
+namespace CBforDummies.Patches
+{
+	// Token: 0x02000009 RID: 9
+	public class ExtensionTraitGetTextPatch
+	{
+		// Token: 0x06000015 RID: 21 RVA: 0x0000238C File Offset: 0x0000058C
+		[NullableContext(1)]
+		public static void Postfix(ETrait trait, ref string __result)
+		{
+			Console.WriteLine("Test:\n");
+			Console.WriteLine(new StackTrace());
+			Console.WriteLine("\n");
+		}
+	}
+}

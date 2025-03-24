@@ -1,0 +1,120 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using BepInEx;
+using BepInEx.Configuration;
+using BepInEx.Core.Logging.Interpolation;
+using BepInEx.Logging;
+using BepInEx.Unity.Mono;
+using MBMModsServices;
+using MBMScripts;
+
+namespace RandomNames
+{
+	// Token: 0x02000008 RID: 8
+	[NullableContext(1)]
+	[Nullable(0)]
+	[BepInPlugin("com.Memacile.RandomNames", "RandomNames", "2.0.0")]
+	[BepInDependency("com.Memacile.SoapBoxHero.MBMModsServices", BepInDependency.DependencyFlags.HardDependency)]
+	public class RandomNamesPlugin : BaseUnityPlugin
+	{
+		// Token: 0x0600000D RID: 13 RVA: 0x000022FC File Offset: 0x000004FC
+		public RandomNamesPlugin()
+		{
+			RandomNamesPlugin.log = base.Logger;
+			RandomNamesPlugin.Enabled = base.Config.Bind<bool>(new ConfigDefinition("General", "Enabled"), true, new ConfigDescription("Enables RandomNames plugin.", null, Array.Empty<object>()));
+		}
+
+		// Token: 0x0600000E RID: 14 RVA: 0x0000234C File Offset: 0x0000054C
+		private void Awake()
+		{
+			ManualLogSource manualLogSource = RandomNamesPlugin.log;
+			if (manualLogSource != null)
+			{
+				bool flag;
+				BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(11, 1, out flag);
+				if (flag)
+				{
+					bepInExInfoLogInterpolatedStringHandler.AppendFormatted<string>("RandomNames");
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" is loaded.");
+				}
+				manualLogSource.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+			}
+			if (RandomNamesPlugin.Enabled.Value)
+			{
+				this.InitializeNameGenerator();
+				base.Config.SettingChanged += new EventHandler<SettingChangedEventArgs>(this.UpdateNameGenerator);
+				CharacterAccessToolNewlyCreated.RegisterActionsForNewCharacter(new Action<Character, Character, Character>(this.SetNameForNewCharacter));
+			}
+			ManualLogSource manualLogSource2 = RandomNamesPlugin.log;
+			if (manualLogSource2 == null)
+			{
+				return;
+			}
+			manualLogSource2.LogMessage("RandomNames is " + (RandomNamesPlugin.Enabled.Value ? "enabled" : "disabled") + ".");
+		}
+
+		// Token: 0x0600000F RID: 15 RVA: 0x00002400 File Offset: 0x00000600
+		public void InitializeNameGenerator()
+		{
+			string text = "If set to 'father' then any child gets the last name of the father. If the father has no last name then the mothers last name is taken.If the mother also has no last name then the child does not get a last name.If set to 'mother' it works the same as father but mothers last name prioritized.If set to 'none' then children do not inherit a last name.";
+			ConfigEntry<TakeLastNameFrom> configEntry = base.Config.Bind<TakeLastNameFrom>(new ConfigDefinition("General", "TakeLastNameFrom"), TakeLastNameFrom.Father, new ConfigDescription(text, null, Array.Empty<object>()));
+			IDictionary<EUnitType, string> pathToNameFilesFromConfig = this.GetPathToNameFilesFromConfig();
+			RandomNamesPlugin.nameGenerator = new NameGenerator(configEntry.Value, pathToNameFilesFromConfig);
+		}
+
+		// Token: 0x06000010 RID: 16 RVA: 0x00002451 File Offset: 0x00000651
+		[NullableContext(2)]
+		public void SetNameForNewCharacter([Nullable(1)] Character newCharacter, Character mother, Character father)
+		{
+			NameGenerator nameGenerator = RandomNamesPlugin.nameGenerator;
+			if (nameGenerator == null)
+			{
+				return;
+			}
+			nameGenerator.SetNameForNewCharacter(newCharacter, mother, father);
+		}
+
+		// Token: 0x06000011 RID: 17 RVA: 0x00002468 File Offset: 0x00000668
+		private IDictionary<EUnitType, string> GetPathToNameFilesFromConfig()
+		{
+			Dictionary<EUnitType, string> dictionary = new Dictionary<EUnitType, string>();
+			foreach (EUnitType eunitType in UnitTypeUtility.NormalUnitTypes)
+			{
+				ConfigEntry<string> configEntry = base.Config.Bind<string>(new ConfigDefinition("General", string.Format("{0}.PathToNamesFile", eunitType)), string.Format("./BepInEx/resources/RandomNames/{0}Names.txt", eunitType), new ConfigDescription(string.Format("Path to file with names for {0}.", eunitType), null, Array.Empty<object>()));
+				if (dictionary.ContainsKey(eunitType))
+				{
+					dictionary[eunitType] = configEntry.Value;
+				}
+				else
+				{
+					dictionary.Add(eunitType, configEntry.Value);
+				}
+			}
+			return dictionary;
+		}
+
+		// Token: 0x06000012 RID: 18 RVA: 0x00002530 File Offset: 0x00000730
+		private void UpdateNameGenerator([Nullable(2)] object sender, EventArgs e)
+		{
+			this.InitializeNameGenerator();
+		}
+
+		// Token: 0x0400000B RID: 11
+		public const string AUTHOR = "Memacile";
+
+		// Token: 0x0400000C RID: 12
+		public const string GUID = "com.Memacile.RandomNames";
+
+		// Token: 0x0400000D RID: 13
+		[Nullable(2)]
+		public static ManualLogSource log;
+
+		// Token: 0x0400000E RID: 14
+		[Nullable(2)]
+		public static NameGenerator nameGenerator;
+
+		// Token: 0x0400000F RID: 15
+		public static ConfigEntry<bool> Enabled;
+	}
+}

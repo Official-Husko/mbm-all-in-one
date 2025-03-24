@@ -1,0 +1,46 @@
+using System;
+
+namespace ChaoticMarket.RandomTraitGeneration
+{
+	// Token: 0x0200000B RID: 11
+	public class RandomTraitStats
+	{
+		// Token: 0x17000001 RID: 1
+		// (get) Token: 0x06000016 RID: 22 RVA: 0x000026F4 File Offset: 0x000008F4
+		// (set) Token: 0x06000017 RID: 23 RVA: 0x000026FC File Offset: 0x000008FC
+		public double ChanceOfTrait { get; set; }
+
+		// Token: 0x17000002 RID: 2
+		// (get) Token: 0x06000018 RID: 24 RVA: 0x00002705 File Offset: 0x00000905
+		// (set) Token: 0x06000019 RID: 25 RVA: 0x0000270D File Offset: 0x0000090D
+		public bool DivideBy100 { get; set; }
+
+		// Token: 0x17000003 RID: 3
+		// (get) Token: 0x0600001A RID: 26 RVA: 0x00002716 File Offset: 0x00000916
+		// (set) Token: 0x0600001B RID: 27 RVA: 0x0000271E File Offset: 0x0000091E
+		public int MaxValue { get; set; }
+
+		// Token: 0x17000004 RID: 4
+		// (get) Token: 0x0600001C RID: 28 RVA: 0x00002727 File Offset: 0x00000927
+		// (set) Token: 0x0600001D RID: 29 RVA: 0x0000272F File Offset: 0x0000092F
+		public int MinValue { get; set; }
+
+		// Token: 0x0600001E RID: 30 RVA: 0x00002738 File Offset: 0x00000938
+		public RandomTraitStats()
+		{
+			this.ChanceOfTrait = 0.0;
+			this.DivideBy100 = false;
+			this.MaxValue = 0;
+			this.MinValue = 0;
+		}
+
+		// Token: 0x0600001F RID: 31 RVA: 0x00002764 File Offset: 0x00000964
+		public RandomTraitStats(double chanceOfTrait, bool divideBy100, int maxValue, int minValue)
+		{
+			this.ChanceOfTrait = chanceOfTrait;
+			this.DivideBy100 = divideBy100;
+			this.MaxValue = maxValue;
+			this.MinValue = minValue;
+		}
+	}
+}

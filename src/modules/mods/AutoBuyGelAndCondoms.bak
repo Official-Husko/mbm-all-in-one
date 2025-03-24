@@ -1,0 +1,238 @@
+using System;
+using System.Runtime.CompilerServices;
+using BepInEx;
+using BepInEx.Configuration;
+using BepInEx.Unity.Mono;
+using MBMModsServices;
+using MBMScripts;
+using UnityEngine;
+
+namespace AutoBuyCondomAndLoveGel
+{
+	// Token: 0x02000006 RID: 6
+	[NullableContext(1)]
+	[Nullable(0)]
+	[BepInPlugin("com.SoapBoxHero.AutoBuyCondomAndLoveGel", "AutoBuyCondomAndLoveGel", "2.0.0")]
+	[BepInDependency("com.Memacile.SoapBoxHero.MBMModsServices", BepInDependency.DependencyFlags.HardDependency)]
+	public class AutoBuyPlugin : BaseUnityPlugin
+	{
+		// Token: 0x17000001 RID: 1
+		// (get) Token: 0x06000006 RID: 6 RVA: 0x0000209D File Offset: 0x0000029D
+		[Nullable(2)]
+		public static GameManager GM
+		{
+			[NullableContext(2)]
+			get
+			{
+				return ToolsPlugin.GM;
+			}
+		}
+
+		// Token: 0x17000002 RID: 2
+		// (get) Token: 0x06000007 RID: 7 RVA: 0x000020A4 File Offset: 0x000002A4
+		[Nullable(2)]
+		public static PlayData PD
+		{
+			[NullableContext(2)]
+			get
+			{
+				return ToolsPlugin.PD;
+			}
+		}
+
+		// Token: 0x06000008 RID: 8 RVA: 0x000020AC File Offset: 0x000002AC
+		public AutoBuyPlugin()
+		{
+			this.EnableBuyCondoms = base.Config.Bind(new ConfigInfo<bool>
+			{
+				Section = "AutoBuyCondoms",
+				Name = "Enabled",
+				Description = "If true, automatically buys Condoms.",
+				DefaultValue = true
+			});
+			this.EnableBuyCondoms.SettingChanged += this.Enable_Changed;
+			this.CondomBuyMax = base.Config.Bind(new ConfigInfo<int>
+			{
+				Section = "AutoBuyCondoms",
+				Name = "Max",
+				Description = "Maximum Condoms per buy.",
+				DefaultValue = 100,
+				AcceptableValues = new AcceptableValueRange<int>(1, 100)
+			});
+			this.CondomBuyMin = base.Config.Bind(new ConfigInfo<int>
+			{
+				Section = "AutoBuyCondoms",
+				Name = "Min",
+				Description = "Minimum Condoms per buy.",
+				DefaultValue = 10,
+				AcceptableValues = new AcceptableValueRange<int>(1, 100)
+			});
+			this.CondomBuyPeriod = base.Config.Bind(new ConfigInfo<float>
+			{
+				Section = "AutoBuyCondoms",
+				Name = "Period",
+				Description = "Seconds between each purchase.",
+				DefaultValue = 1f,
+				AcceptableValues = new AcceptableValueRange<float>(1f, 99999f)
+			});
+			this.EnableBuyLoveGel = base.Config.Bind(new ConfigInfo<bool>
+			{
+				Section = "AutoBuyLovegel",
+				Name = "Enabled",
+				Description = "If true, automatically buys Love Gel.",
+				DefaultValue = true
+			});
+			this.EnableBuyLoveGel.SettingChanged += this.Enable_Changed;
+			this.LoveGelBuyMax = base.Config.Bind(new ConfigInfo<int>
+			{
+				Section = "AutoBuyLovegel",
+				Name = "Max",
+				Description = "Maximum Love Gel per buy.",
+				DefaultValue = 100,
+				AcceptableValues = new AcceptableValueRange<int>(1, 100)
+			});
+			this.LoveGelBuyMin = base.Config.Bind(new ConfigInfo<int>
+			{
+				Section = "AutoBuyLovegel",
+				Name = "Min",
+				Description = "Minimum Love Gel per buy.",
+				DefaultValue = 10,
+				AcceptableValues = new AcceptableValueRange<int>(1, 100)
+			});
+			this.LoveGelBuyPeriod = base.Config.Bind(new ConfigInfo<float>
+			{
+				Section = "AutoBuyLovegel",
+				Name = "Period",
+				Description = "Seconds between each purchase.",
+				DefaultValue = 1f,
+				AcceptableValues = new AcceptableValueRange<float>(1f, 99999f)
+			});
+		}
+
+		// Token: 0x06000009 RID: 9 RVA: 0x00002391 File Offset: 0x00000591
+		private void Enable_Changed([Nullable(2)] object sender, EventArgs e)
+		{
+			this.ConfigureActions();
+		}
+
+		// Token: 0x0600000A RID: 10 RVA: 0x0000239C File Offset: 0x0000059C
+		private void ConfigureActions()
+		{
+			if (this._bc != null)
+			{
+				this._bc.enabled = this.EnableBuyCondoms.Value;
+				base.Logger.LogMessage(this.EnableBuyCondoms.Value ? "Enabled" : "Disabled EnableBuyCondoms action.");
+			}
+			else
+			{
+				this._bc = ToolsPlugin.RegisterPeriodicAction(this.CondomBuyPeriod.Value, new Action(this.BuyCondoms), true);
+				this._bc.enabled = this.EnableBuyCondoms.Value;
+				base.Logger.LogMessage("Registered BuyCondoms action for period of " + this.CondomBuyPeriod.Value.ToString() + "sec.");
+			}
+			if (this._blg != null)
+			{
+				this._blg.enabled = this.EnableBuyLoveGel.Value;
+				base.Logger.LogMessage(this.EnableBuyLoveGel.Value ? "Enabled" : "Disabled EnableBuyLoveGel action.");
+				return;
+			}
+			this._blg = ToolsPlugin.RegisterPeriodicAction(this.LoveGelBuyPeriod.Value, new Action(this.BuyLoveGel), true);
+			this._blg.enabled = this.EnableBuyLoveGel.Value;
+			base.Logger.LogMessage("Registered BuyLoveGel action for period of " + this.LoveGelBuyPeriod.Value.ToString() + "sec.");
+		}
+
+		// Token: 0x0600000B RID: 11 RVA: 0x000024FC File Offset: 0x000006FC
+		private void Awake()
+		{
+			this.ConfigureActions();
+		}
+
+		// Token: 0x0600000C RID: 12 RVA: 0x00002504 File Offset: 0x00000704
+		public void BuyCondoms()
+		{
+			if (AutoBuyPlugin.GM == null || AutoBuyPlugin.PD == null || AutoBuyPlugin.PD.Days <= 20)
+			{
+				return;
+			}
+			if (AutoBuyPlugin.PD.PlayEventListContains(EPlayEventType.SenaLena2))
+			{
+				return;
+			}
+			if (AutoBuyPlugin.PD.CountOfCondomBuyable < this.CondomBuyMin.Value)
+			{
+				return;
+			}
+			AutoBuyPlugin.PD.CountOfCondomToBuy = Math.Min(AutoBuyPlugin.PD.CountOfCondomBuyable, this.CondomBuyMax.Value);
+			InteractionSenaLena interactionSenaLena = Object.FindObjectOfType<InteractionSenaLena>();
+			if (interactionSenaLena == null)
+			{
+				return;
+			}
+			interactionSenaLena.BuyCondom();
+		}
+
+		// Token: 0x0600000D RID: 13 RVA: 0x00002588 File Offset: 0x00000788
+		public void BuyLoveGel()
+		{
+			if (AutoBuyPlugin.GM == null || AutoBuyPlugin.PD == null || AutoBuyPlugin.PD.Days <= 20)
+			{
+				return;
+			}
+			if (AutoBuyPlugin.PD.PlayEventListContains(EPlayEventType.SenaLena2))
+			{
+				return;
+			}
+			if (AutoBuyPlugin.PD.CountOfLoveGelBuyable < this.LoveGelBuyMin.Value)
+			{
+				return;
+			}
+			AutoBuyPlugin.PD.CountOfLoveGelToBuy = Math.Min(AutoBuyPlugin.PD.CountOfLoveGelBuyable, this.LoveGelBuyMax.Value);
+			InteractionSenaLena interactionSenaLena = Object.FindObjectOfType<InteractionSenaLena>();
+			if (interactionSenaLena == null)
+			{
+				return;
+			}
+			interactionSenaLena.BuyLoveGel();
+		}
+
+		// Token: 0x04000004 RID: 4
+		public const string AUTHOR = "SoapBoxHero";
+
+		// Token: 0x04000005 RID: 5
+		public const string GUID = "com.SoapBoxHero.AutoBuyCondomAndLoveGel";
+
+		// Token: 0x04000006 RID: 6
+		public const int DayBrothelOpens = 20;
+
+		// Token: 0x04000007 RID: 7
+		public ConfigEntry<bool> EnableBuyCondoms;
+
+		// Token: 0x04000008 RID: 8
+		public ConfigEntry<int> CondomBuyMax;
+
+		// Token: 0x04000009 RID: 9
+		public ConfigEntry<int> CondomBuyMin;
+
+		// Token: 0x0400000A RID: 10
+		public ConfigEntry<float> CondomBuyPeriod;
+
+		// Token: 0x0400000B RID: 11
+		public ConfigEntry<bool> EnableBuyLoveGel;
+
+		// Token: 0x0400000C RID: 12
+		public ConfigEntry<float> LoveGelBuyPeriod;
+
+		// Token: 0x0400000D RID: 13
+		public ConfigEntry<int> LoveGelBuyMax;
+
+		// Token: 0x0400000E RID: 14
+		public ConfigEntry<int> LoveGelBuyMin;
+
+		// Token: 0x0400000F RID: 15
+		[Nullable(2)]
+		private PeriodicAction _bc;
+
+		// Token: 0x04000010 RID: 16
+		[Nullable(2)]
+		private PeriodicAction _blg;
+	}
+}

@@ -1,0 +1,109 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using MBMModsServices;
+using MBMScripts;
+
+namespace ChaoticMarket.RandomTraitGeneration
+{
+	// Token: 0x0200000A RID: 10
+	[NullableContext(1)]
+	[Nullable(0)]
+	public class RandomTraitGeneratorSpecificCharacter
+	{
+		// Token: 0x0600000F RID: 15 RVA: 0x000024E3 File Offset: 0x000006E3
+		public RandomTraitGeneratorSpecificCharacter(Random rng, bool useGameDefaultTraitGeneration)
+		{
+			this.UseDefaultTraitGeneration = useGameDefaultTraitGeneration;
+			this.RandomNumberGenerator = rng;
+			this.TraitMinMaxStats = new Dictionary<ETraitReadable, RandomTraitStats>();
+		}
+
+		// Token: 0x06000010 RID: 16 RVA: 0x00002504 File Offset: 0x00000704
+		public void SetTraitGeneration(ETraitReadable trait, double chanceOfTrait, bool divideBy100, int maxValue, int minValue)
+		{
+			if (maxValue < minValue)
+			{
+				int num = minValue;
+				minValue = maxValue;
+				maxValue = num;
+			}
+			chanceOfTrait = Math.Min(100.0, Math.Max(0.0, chanceOfTrait));
+			if (this.TraitMinMaxStats.ContainsKey(trait))
+			{
+				this.TraitMinMaxStats[trait] = new RandomTraitStats(chanceOfTrait, divideBy100, maxValue, minValue);
+				return;
+			}
+			this.TraitMinMaxStats.Add(trait, new RandomTraitStats(chanceOfTrait, divideBy100, maxValue, minValue));
+		}
+
+		// Token: 0x06000011 RID: 17 RVA: 0x0000257B File Offset: 0x0000077B
+		public void GenerateRandomTraitForCharacter(Character character)
+		{
+			if (this.UseDefaultTraitGeneration)
+			{
+				return;
+			}
+			this.RemoveAllGeneralTraits(character);
+			this.AddNewGeneralTraits(character);
+		}
+
+		// Token: 0x06000012 RID: 18 RVA: 0x00002594 File Offset: 0x00000794
+		private void AddNewGeneralTraits(Character character)
+		{
+			foreach (KeyValuePair<ETraitReadable, RandomTraitStats> keyValuePair in this.TraitMinMaxStats)
+			{
+				ETrait etrait = keyValuePair.Key.ToETrait();
+				float randomValue = this.GetRandomValue(keyValuePair.Key, keyValuePair.Value);
+				if (randomValue != 0f)
+				{
+					character.AddTrait(etrait);
+					character.SetTraitValue(etrait, randomValue);
+				}
+			}
+			character.UpdateState();
+		}
+
+		// Token: 0x06000013 RID: 19 RVA: 0x0000261C File Offset: 0x0000081C
+		private float GetRandomValue(ETraitReadable trait, RandomTraitStats randomTraitStats)
+		{
+			if (randomTraitStats.ChanceOfTrait <= this.RandomNumberGenerator.NextDouble())
+			{
+				return 0f;
+			}
+			float num = 1f;
+			if (randomTraitStats.DivideBy100)
+			{
+				num = 100f;
+			}
+			float num2 = (float)this.RandomNumberGenerator.Next(randomTraitStats.MinValue, randomTraitStats.MaxValue) / num;
+			return this.RoundToNearestIncrement(trait, num2);
+		}
+
+		// Token: 0x06000014 RID: 20 RVA: 0x0000267C File Offset: 0x0000087C
+		private float RoundToNearestIncrement(ETraitReadable trait, float resultValue)
+		{
+			float traitIncrement = TraitUtility.GetTraitIncrement(trait);
+			return (float)Math.Round((double)(resultValue / traitIncrement)) * traitIncrement;
+		}
+
+		// Token: 0x06000015 RID: 21 RVA: 0x0000269C File Offset: 0x0000089C
+		private void RemoveAllGeneralTraits(Character character)
+		{
+			foreach (ETraitReadable etraitReadable in TraitUtility.GeneralTraits)
+			{
+				character.RemoveTrait(etraitReadable.ToETrait());
+			}
+			character.UpdateState();
+		}
+
+		// Token: 0x04000010 RID: 16
+		private bool UseDefaultTraitGeneration;
+
+		// Token: 0x04000011 RID: 17
+		private readonly IDictionary<ETraitReadable, RandomTraitStats> TraitMinMaxStats;
+
+		// Token: 0x04000012 RID: 18
+		private Random RandomNumberGenerator;
+	}
+}

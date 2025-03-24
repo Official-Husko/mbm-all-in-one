@@ -1,0 +1,66 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using HarmonyLib;
+using MBMScripts;
+
+namespace CBwithTits
+{
+	// Token: 0x02000007 RID: 7
+	[NullableContext(1)]
+	[Nullable(0)]
+	[HarmonyPatch]
+	public class LowerBodyTypePatch
+	{
+		// Token: 0x0600000C RID: 12 RVA: 0x000023C0 File Offset: 0x000005C0
+		[HarmonyAfter(new string[] { "mbm.complexbreeding" })]
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(Character), "LowerBodyType", MethodType.Getter)]
+		public static void PostfixGetter(Character __instance, int ___m_LowerBodyType, ref int __result)
+		{
+			if (!CBwithTitsPlugin.IsRandomThighSize())
+			{
+				return;
+			}
+			EFigure figure = __instance.Figure;
+			if (figure == EFigure.Girl || figure == EFigure.Woman)
+			{
+				__result = ___m_LowerBodyType;
+			}
+		}
+
+		// Token: 0x0600000D RID: 13 RVA: 0x000023E7 File Offset: 0x000005E7
+		[HarmonyPatch(typeof(Female), "Initialize", new Type[] { })]
+		[HarmonyBefore(new string[] { "mbm.complexbreeding" })]
+		[HarmonyPostfix]
+		public static void PostfixInitializeBeforeComplexBreeding(Female __instance)
+		{
+			if (!CBwithTitsPlugin.IsRandomThighSize())
+			{
+				return;
+			}
+			LowerBodyTypePatch._tempLowerBodySizeMemory.Add(__instance.UnitId, __instance.LowerBodyType);
+		}
+
+		// Token: 0x0600000E RID: 14 RVA: 0x00002408 File Offset: 0x00000608
+		[HarmonyPatch(typeof(Female), "Initialize", new Type[] { })]
+		[HarmonyAfter(new string[] { "mbm.complexbreeding" })]
+		[HarmonyPostfix]
+		public static void PostfixInitializeAfterComplexBreeding(Female __instance)
+		{
+			if (!CBwithTitsPlugin.IsRandomThighSize())
+			{
+				return;
+			}
+			int num;
+			if (LowerBodyTypePatch._tempLowerBodySizeMemory.TryGetValue(__instance.UnitId, out num))
+			{
+				__instance.LowerBodyType = num;
+				LowerBodyTypePatch._tempLowerBodySizeMemory.Remove(__instance.UnitId);
+			}
+		}
+
+		// Token: 0x04000009 RID: 9
+		private static Dictionary<int, int> _tempLowerBodySizeMemory = new Dictionary<int, int>();
+	}
+}

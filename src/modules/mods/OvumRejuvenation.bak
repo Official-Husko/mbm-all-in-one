@@ -1,0 +1,107 @@
+using System;
+using System.Runtime.CompilerServices;
+using BepInEx;
+using BepInEx.Configuration;
+using BepInEx.Core.Logging.Interpolation;
+using BepInEx.Logging;
+using BepInEx.Unity.Mono;
+using HarmonyLib;
+using MBMScripts;
+
+namespace OvumRejuvenation
+{
+	// Token: 0x02000006 RID: 6
+	[NullableContext(1)]
+	[Nullable(0)]
+	[BepInPlugin("com.Surgy.OvumRejuvenation", "OvumRejuvenation", "2.0.0")]
+	public class OvumRejuvenation : BaseUnityPlugin
+	{
+		// Token: 0x06000006 RID: 6 RVA: 0x000020A0 File Offset: 0x000002A0
+		public OvumRejuvenation()
+		{
+			OvumRejuvenation.log = base.Logger;
+			this.Enabled = base.Config.Bind<bool>(new ConfigDefinition("General", "Enabled"), true, new ConfigDescription("Enables OvumRejuvenation plugin.", null, Array.Empty<object>()));
+			this.Enabled.SettingChanged += this.Enabled_Changed;
+		}
+
+		// Token: 0x06000007 RID: 7 RVA: 0x00002106 File Offset: 0x00000306
+		private void Enabled_Changed([Nullable(2)] object sender, EventArgs e)
+		{
+			this.ConfigureActions();
+		}
+
+		// Token: 0x06000008 RID: 8 RVA: 0x0000210E File Offset: 0x0000030E
+		private void ConfigureActions()
+		{
+			OvumRejuvenation._pact = this.Enabled.Value;
+			base.Logger.LogMessage("OvumRejuvenation is " + (OvumRejuvenation._pact ? "enabled" : "disabled") + ".");
+		}
+
+		// Token: 0x06000009 RID: 9 RVA: 0x00002150 File Offset: 0x00000350
+		private void Awake()
+		{
+			this.ConfigureActions();
+			try
+			{
+				ManualLogSource logger = base.Logger;
+				bool flag;
+				BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(30, 1, out flag);
+				if (flag)
+				{
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral("Installing ");
+					bepInExInfoLogInterpolatedStringHandler.AppendFormatted<string>("OvumRejuvenation");
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" Harmony patches...");
+				}
+				logger.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+				new Harmony("com.Surgy.OvumRejuvenation").PatchAll(typeof(OvumRejuvenation));
+				ManualLogSource logger2 = base.Logger;
+				bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(28, 1, out flag);
+				if (flag)
+				{
+					bepInExInfoLogInterpolatedStringHandler.AppendFormatted<string>("OvumRejuvenation");
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" Harmony patches successful.");
+				}
+				logger2.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+			}
+			catch
+			{
+				ManualLogSource logger3 = base.Logger;
+				bool flag;
+				BepInExErrorLogInterpolatedStringHandler bepInExErrorLogInterpolatedStringHandler = new BepInExErrorLogInterpolatedStringHandler(24, 1, out flag);
+				if (flag)
+				{
+					bepInExErrorLogInterpolatedStringHandler.AppendFormatted<string>("OvumRejuvenation");
+					bepInExErrorLogInterpolatedStringHandler.AppendLiteral(" Harmony patches failed!");
+				}
+				logger3.LogError(bepInExErrorLogInterpolatedStringHandler);
+			}
+		}
+
+		// Token: 0x0600000A RID: 10 RVA: 0x0000222C File Offset: 0x0000042C
+		[HarmonyPatch(typeof(Character), "BirthCount", MethodType.Setter)]
+		[HarmonyPostfix]
+		public static void BirthCount(Character __instance, ref int ___m_BirthCount, ref int ___m_MultiplePregnancyCount, ref int ___m_MaxBirthCount)
+		{
+			if (OvumRejuvenation._pact && __instance != null && ___m_MultiplePregnancyCount > 0 && ___m_MaxBirthCount > 0 && ___m_BirthCount >= ___m_MaxBirthCount - ___m_MultiplePregnancyCount)
+			{
+				___m_BirthCount = Math.Max(___m_MaxBirthCount - ___m_MultiplePregnancyCount, 0);
+			}
+		}
+
+		// Token: 0x04000004 RID: 4
+		public const string AUTHOR = "Surgy";
+
+		// Token: 0x04000005 RID: 5
+		public const string GUID = "com.Surgy.OvumRejuvenation";
+
+		// Token: 0x04000006 RID: 6
+		[Nullable(2)]
+		public static ManualLogSource log;
+
+		// Token: 0x04000007 RID: 7
+		public ConfigEntry<bool> Enabled;
+
+		// Token: 0x04000008 RID: 8
+		private static bool _pact = true;
+	}
+}

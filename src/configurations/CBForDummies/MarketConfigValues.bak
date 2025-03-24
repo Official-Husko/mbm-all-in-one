@@ -1,0 +1,18 @@
+using System;
+
+namespace CBforDummies.Configuration
+{
+	// Token: 0x0200001A RID: 26
+	public class MarketConfigValues
+	{
+		// Token: 0x17000011 RID: 17
+		// (get) Token: 0x0600005E RID: 94 RVA: 0x0000398B File Offset: 0x00001B8B
+		// (set) Token: 0x0600005F RID: 95 RVA: 0x00003993 File Offset: 0x00001B93
+		public int EssenceMaxValue { get; internal set; }
+
+		// Token: 0x17000012 RID: 18
+		// (get) Token: 0x06000060 RID: 96 RVA: 0x0000399C File Offset: 0x00001B9C
+		// (set) Token: 0x06000061 RID: 97 RVA: 0x000039A4 File Offset: 0x00001BA4
+		public int EssenceMinValue { get; internal set; }
+	}
+}

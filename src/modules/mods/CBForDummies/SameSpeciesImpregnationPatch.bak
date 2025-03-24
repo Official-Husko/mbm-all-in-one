@@ -1,0 +1,135 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using CBforDummies.Configuration;
+using ComplexBreeding;
+using ComplexBreeding.Essences;
+using ComplexBreeding.Patches.Character;
+using ComplexBreeding.Species;
+using ComplexBreeding.SpeciesCore;
+using ComplexBreeding.Traits;
+using HarmonyLib;
+using MBMScripts;
+using UnityEngine;
+
+namespace CBforDummies.Patches
+{
+	// Token: 0x0200000F RID: 15
+	[NullableContext(1)]
+	[Nullable(0)]
+	[HarmonyPatch(typeof(BeImpregnatedPatch), "SameSpeciesImpregnation", new Type[]
+	{
+		typeof(Character),
+		typeof(Character)
+	})]
+	public class SameSpeciesImpregnationPatch
+	{
+		// Token: 0x06000027 RID: 39 RVA: 0x000027C0 File Offset: 0x000009C0
+		public static bool Prefix(Character female, Character male)
+		{
+			return false;
+		}
+
+		// Token: 0x06000028 RID: 40 RVA: 0x000027C4 File Offset: 0x000009C4
+		public static void Postfix(Character female, Character male, ref bool __result)
+		{
+			bool flag = male.Race == ERace.Human;
+			double sameSpeciesChance = SameSpeciesImpregnationPatch.GetSameSpeciesChance(female);
+			if (!flag && (double)Random.Range(1, 101) <= sameSpeciesChance)
+			{
+				foreach (IEssenceData essenceData in GameData.EssencesDataList)
+				{
+					if (essenceData.UnlockParentSpecies != null && essenceData.UnlockParentSpecies.Contains(male.Race) && female.GetTraitValue(essenceData.ReplacedTrait) > 0f)
+					{
+						flag = true;
+						break;
+					}
+				}
+			}
+			if (!flag)
+			{
+				__result = false;
+				return;
+			}
+			ISpeciesData speciesData;
+			if (GameData.TryGetSpecies(female, out speciesData) && speciesData != null)
+			{
+				__result = SameSpeciesImpregnationPatch.CheckLowerEvoPregnancy(female, male, speciesData);
+				return;
+			}
+			female.GetPregnant(SameSpeciesImpregnationPatch.GetFakeHumanMaleForWomenBirth(male, string.Empty));
+			__result = true;
+		}
+
+		// Token: 0x06000029 RID: 41 RVA: 0x00002898 File Offset: 0x00000A98
+		private static double GetSameSpeciesChance(Character female)
+		{
+			GeneralConfigValues generalConfig = CBforDummiesPlugin.GeneralConfig;
+			double num = generalConfig.ChanceOfSameSpeciesFemaleOffspring;
+			if (generalConfig.SameSpeciesFemaleOffspringComputationType == SameSpeciesFemaleOffSpringComputationType.Adjusted_by_max_births)
+			{
+				num = 100.0 / (double)female.MaxBirthCount * generalConfig.AdjustedFemaleOffspringMultiplier;
+			}
+			return num;
+		}
+
+		// Token: 0x0600002A RID: 42 RVA: 0x000028D8 File Offset: 0x00000AD8
+		private static bool CheckLowerEvoPregnancy(Character female, Character male, ISpeciesData femaleSpecies)
+		{
+			if (femaleSpecies.Tier <= 1 || Random.Range(1, 101) > GameData.TierLowerEvoBirths[femaleSpecies.Tier])
+			{
+				female.GetPregnant(SameSpeciesImpregnationPatch.GetFakeHumanMaleForWomenBirth(male, femaleSpecies.Name));
+				return true;
+			}
+			List<ISpeciesData> list = (from x in femaleSpecies.PossiblyMothers ?? new string[0]
+				select GameData.SpeciesDataList.FirstOrDefault((ISpeciesData y) => y.Name == x) into x
+				where x != null && x.Tier < femaleSpecies.Tier
+				select x).ToList<ISpeciesData>();
+			if (femaleSpecies.BaseMother != null && (!list.Any<ISpeciesData>() || Random.Range(0, 2) == 0))
+			{
+				ERace race = GameData.SpeciesCoreDataList.First((ISpeciesCoreData x) => x.GetReplacedType == femaleSpecies.BaseMother).Race;
+				ERace race2 = female.Race;
+				female.Race = race;
+				female.GetPregnant(SameSpeciesImpregnationPatch.GetFakeHumanMaleForWomenBirth(male, string.Empty));
+				female.Race = race2;
+				return true;
+			}
+			if (!list.Any<ISpeciesData>())
+			{
+				return false;
+			}
+			ISpeciesData speciesData = list[Random.Range(0, list.Count)];
+			return speciesData != null && SameSpeciesImpregnationPatch.CheckLowerEvoPregnancy(female, male, speciesData);
+		}
+
+		// Token: 0x0600002B RID: 43 RVA: 0x00002A1C File Offset: 0x00000C1C
+		private static Client GetFakeHumanMaleForWomenBirth(Character male, string speciesName)
+		{
+			Client client = new Client(male.UnitId)
+			{
+				EyeColor = male.EyeColor,
+				HairColor = male.SkinColor,
+				SkinColor = male.SkinColor,
+				DisplayName = speciesName
+			};
+			client.OnEnableTrait();
+			client.ClearRaceTrait();
+			client.ClearTrait();
+			foreach (IEssenceData essenceData in GameData.EssencesDataList)
+			{
+				float traitValue = male.GetTraitValue(essenceData.ReplacedTrait);
+				client.AddTrait(essenceData.ReplacedTrait);
+				client.AddTraitValue(essenceData.ReplacedTrait, traitValue);
+			}
+			foreach (ITraitData traitData in GameData.TraitsDataList)
+			{
+				if (male.TraitContains(traitData.ReplacedTrait))
+				{
+					client.AddRaceTrait(traitData.ReplacedTrait);
+				}
+			}
+			return client;
+		}
+	}
+}

@@ -1,0 +1,296 @@
+using System;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using BepInEx;
+using BepInEx.Configuration;
+using BepInEx.Core.Logging.Interpolation;
+using BepInEx.Logging;
+using BepInEx.Unity.Mono;
+using HarmonyLib;
+using MBMScripts;
+using UnityEngine;
+
+namespace CheatMenu
+{
+	// Token: 0x02000006 RID: 6
+	[NullableContext(1)]
+	[Nullable(0)]
+	[BepInPlugin("com.zvnlot.CheatMenu", "CheatMenu", "2.0.0")]
+	public class CheatMenu : BaseUnityPlugin
+	{
+		// Token: 0x06000006 RID: 6 RVA: 0x0000209D File Offset: 0x0000029D
+		private void Enabled_Changed([Nullable(2)] object sender, EventArgs e)
+		{
+			base.Logger.LogMessage("CheatMenu is " + (CheatMenu.Enabled.Value ? "enabled" : "disabled") + ".");
+		}
+
+		// Token: 0x06000007 RID: 7 RVA: 0x000020D4 File Offset: 0x000002D4
+		public static void OnGUI_MOD(PlayerController __instance)
+		{
+			CheatMenu.OpenCheatMenu();
+			if (CheatMenu.alwaysWash)
+			{
+				foreach (Unit unit in (Traverse.Create(PlayData.Instance).Field("m_UnitSeqList").GetValue() as SeqList<Unit>))
+				{
+					Character character = unit as Character;
+					if (character == null)
+					{
+						Room room = unit as Room;
+						if (room != null)
+						{
+							room.Clear();
+						}
+					}
+					else
+					{
+						character.SemenBukakkeType = 0;
+						character.SemenOutsideType = 0;
+						character.SemenInsideType = 0;
+					}
+				}
+			}
+		}
+
+		// Token: 0x06000008 RID: 8 RVA: 0x00002178 File Offset: 0x00000378
+		public static void OpenCheatMenu()
+		{
+			if (GUI.Button(new Rect(0f, 0f, 100f, 30f), "Cheats"))
+			{
+				CheatMenu.menuActive = !CheatMenu.menuActive;
+			}
+			float num = 220f;
+			float num2 = 15f;
+			if (CheatMenu.menuActive)
+			{
+				GUI.Box(new Rect(num, num2, 450f, 250f), "");
+				if (GUI.Button(new Rect(num + 10f, num2 + 30f, 180f, 30f), "Add 1000 gold"))
+				{
+					PlayData.Instance.Gold += 1000m;
+				}
+				if (GUI.Button(new Rect(num + 250f, num2 + 30f, 180f, 30f), "Add 10 achievement points"))
+				{
+					PlayData.Instance.AchievementPoint += 10;
+				}
+				if (GUI.Button(new Rect(num + 10f, num2 + 150f, 180f, 30f), "Brainwash all NPCs"))
+				{
+					GameManager.Instance.BrainwashAmilia(false);
+					GameManager.Instance.BrainwashFlora(false);
+					GameManager.Instance.BrainwashNiel(false);
+					GameManager.Instance.BrainwashSena(false);
+					GameManager.Instance.BrainwashLena(false);
+					GameManager.Instance.BrainwashBarbara(false);
+				}
+				if (GUI.Button(new Rect(num + 250f, num2 + 90f, 180f, 30f), "Soul=666"))
+				{
+					PlayData.Instance.Soul = 666;
+				}
+				if (GUI.Button(new Rect(num + 10f, num2 + 210f, 180f, 30f), CheatMenu.washText))
+				{
+					CheatMenu.alwaysWash = !CheatMenu.alwaysWash;
+					if (CheatMenu.alwaysWash)
+					{
+						CheatMenu.washText = "Toggle auto clean (ON)";
+					}
+					else
+					{
+						CheatMenu.washText = "Toggle auto clean (OFF)";
+					}
+				}
+				if (GUI.Button(new Rect(num + 250f, num2 + 210f, 180f, 30f), "PixyCount + 1"))
+				{
+					PlayData instance = PlayData.Instance;
+					int floraPixyCount = instance.FloraPixyCount;
+					instance.FloraPixyCount = floraPixyCount + 1;
+				}
+				if (GUI.Button(new Rect(num + 250f, num2 + 150f, 180f, 30f), "100 items"))
+				{
+					PlayData instance2 = PlayData.Instance;
+					instance2.NewItem(EItemType.Item_TentacleEgg, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_HumanDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_ElfDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_DwarfDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_NekoDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_InuDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_UsagiDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_HitsujiDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_DragonianDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_GoblinDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_OrcDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_WerewolfDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_MinotaurDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_SalamanderDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_OriginDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.BodyFluid, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.VenerealDiseaseDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.HumanPheromone, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.ElfManaEngine, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.DawrfHeart, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.InuMammaryGlandDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.NecoOvarianDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.UsagiWombDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.HitsujiHorn, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.DragonTailMeat, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.GoblinSemen, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.OrcHeart, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.WerewolfTail, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.MinotaurSkin, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_SalamanderScalePiece, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, 100, true);
+					instance2.NewItem(EItemType.TattooRemovalInjection, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.HealthRecoveryInjection, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.MammaryGlandRecoveryInjection, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.VenerealDiseaseRecoveryInjection, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.OvumRecoveryInjection, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_FertilityMedication, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_Aphrodisiac, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_ViOgra, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_CosmeticPill, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_MonsterCosmeticPill, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_SlaveCosmeticPill, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Item_TraitUpgradePill, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.Milk, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.LoliMilk, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.HumanMilk, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.ElfMilk, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.DwarfMilk, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.FurryMilk, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.SmallFurryMilk, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+					instance2.NewItem(EItemType.DragonianMilk, ESector.Inventory, new ValueTuple<int, int>(1, 0), -1, 100, true);
+				}
+				if (GUI.Button(new Rect(num + 30f, num2 + 90f, 150f, 30f), "Spawn " + CheatMenu.specialSlaveName))
+				{
+					if (PlayData.Instance.GetGameEventFlag(CheatMenu.Special_Slave_Code))
+					{
+						CheatMenu.log.LogInfo(CheatMenu.specialSlaveCodeInt);
+						GameManager.Instance.PlayerData.NewNewCharacterAtKeepingRoom(CheatMenu.specialSlaveTypes[CheatMenu.specialSlaveCodeInt]);
+						GameManager.Instance.OpenWindow(EGameWindow.KeepingRoom);
+					}
+					PlayData.Instance.SetGameEventFlag(CheatMenu.Special_Slave_Code, true);
+				}
+				if (GUI.Button(new Rect(num + 180f, num2 + 90f, 20f, 30f), "+"))
+				{
+					CheatMenu.specialSlaveCodeInt++;
+					if (CheatMenu.specialSlaveCodeInt >= 8)
+					{
+						CheatMenu.specialSlaveCodeInt = 0;
+					}
+					CheatMenu.specialSlaveName = CheatMenu.specialSlaveTypes[CheatMenu.specialSlaveCodeInt].ToString();
+					CheatMenu.Special_Slave_Code = CheatMenu.specialSlaveCodes[CheatMenu.specialSlaveCodeInt];
+				}
+				if (GUI.Button(new Rect(num + 10f, num2 + 90f, 20f, 30f), "-"))
+				{
+					CheatMenu.specialSlaveCodeInt--;
+					if (CheatMenu.specialSlaveCodeInt < 0)
+					{
+						CheatMenu.specialSlaveCodeInt = 7;
+					}
+					CheatMenu.specialSlaveName = CheatMenu.specialSlaveTypes[CheatMenu.specialSlaveCodeInt].ToString();
+					CheatMenu.Special_Slave_Code = CheatMenu.specialSlaveCodes[CheatMenu.specialSlaveCodeInt];
+				}
+			}
+		}
+
+		// Token: 0x06000009 RID: 9 RVA: 0x000029A4 File Offset: 0x00000BA4
+		public void Awake()
+		{
+			if (CheatMenu.Enabled.Value)
+			{
+				CheatMenu.log = base.Logger;
+				ManualLogSource logger = base.Logger;
+				bool flag;
+				BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(30, 1, out flag);
+				if (flag)
+				{
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral("Installing ");
+					bepInExInfoLogInterpolatedStringHandler.AppendFormatted<string>("CheatMenu");
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" Harmony patches...");
+				}
+				logger.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+				Harmony harmony = new Harmony("com.zvnlot.CheatMenu");
+				MethodInfo methodInfo = AccessTools.Method(typeof(PlayerController), "OnGUI", null, null);
+				MethodInfo methodInfo2 = AccessTools.Method(typeof(CheatMenu), "OnGUI_MOD", null, null);
+				harmony.Patch(methodInfo, new HarmonyMethod(methodInfo2), null, null, null, null);
+				ManualLogSource logger2 = base.Logger;
+				bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(28, 1, out flag);
+				if (flag)
+				{
+					bepInExInfoLogInterpolatedStringHandler.AppendFormatted<string>("CheatMenu");
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" Harmony patches successful.");
+				}
+				logger2.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+			}
+		}
+
+		// Token: 0x0600000A RID: 10 RVA: 0x00002A80 File Offset: 0x00000C80
+		public CheatMenu()
+		{
+			CheatMenu.specialSlaveName = "Anna";
+			CheatMenu.specialSlaveCodeInt = 0;
+			CheatMenu.alwaysWash = false;
+			CheatMenu.washText = "Toggle auto clean (OFF)";
+			CheatMenu.Special_Slave_Code = CheatMenu.specialSlaveCodes[0];
+			CheatMenu.slaveSelected = false;
+			CheatMenu.Enabled = base.Config.Bind<bool>(new ConfigDefinition("General", "Enabled"), false, new ConfigDescription("Enables CheatMenu plugin (after game restart).", null, Array.Empty<object>()));
+			CheatMenu.Enabled.SettingChanged += this.Enabled_Changed;
+		}
+
+		// Token: 0x04000004 RID: 4
+		public const string AUTHOR = "zvnlot";
+
+		// Token: 0x04000005 RID: 5
+		public const string GUID = "com.zvnlot.CheatMenu";
+
+		// Token: 0x04000006 RID: 6
+		[Nullable(2)]
+		public static ConfigEntry<bool> Enabled;
+
+		// Token: 0x04000007 RID: 7
+		public static ManualLogSource log;
+
+		// Token: 0x04000008 RID: 8
+		public static bool menuActive = false;
+
+		// Token: 0x04000009 RID: 9
+		private static EGameEvent[] specialSlaveCodes = new EGameEvent[]
+		{
+			EGameEvent.Special_Anna_Code,
+			EGameEvent.Special_Aure_Code,
+			EGameEvent.Special_Bella_Code,
+			EGameEvent.Special_Claire_Code,
+			EGameEvent.Special_Karen_Code,
+			EGameEvent.Special_Nero_Code,
+			EGameEvent.Special_Sylvia_Code,
+			EGameEvent.Special_Vivi_Code
+		};
+
+		// Token: 0x0400000A RID: 10
+		private static EUnitType[] specialSlaveTypes = new EUnitType[]
+		{
+			EUnitType.Anna,
+			EUnitType.Aure,
+			EUnitType.Bella,
+			EUnitType.Claire,
+			EUnitType.Karen,
+			EUnitType.Nero,
+			EUnitType.Sylvia,
+			EUnitType.Vivi
+		};
+
+		// Token: 0x0400000B RID: 11
+		private static string specialSlaveName;
+
+		// Token: 0x0400000C RID: 12
+		private static int specialSlaveCodeInt;
+
+		// Token: 0x0400000D RID: 13
+		private static bool alwaysWash;
+
+		// Token: 0x0400000E RID: 14
+		private static string washText;
+
+		// Token: 0x0400000F RID: 15
+		public static EGameEvent Special_Slave_Code;
+
+		// Token: 0x04000010 RID: 16
+		public static bool slaveSelected;
+	}
+}

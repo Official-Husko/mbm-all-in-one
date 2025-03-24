@@ -1,0 +1,17 @@
+using System;
+using System.Runtime.CompilerServices;
+using MBMScripts;
+
+namespace CBforDummies.Patches
+{
+	// Token: 0x02000012 RID: 18
+	public class TrainingPatch
+	{
+		// Token: 0x06000033 RID: 51 RVA: 0x00002CA3 File Offset: 0x00000EA3
+		[NullableContext(1)]
+		public static void Postfix(Character __instance, int value)
+		{
+			Console.WriteLine(string.Format("Set Training value : {0} ,  maxValue = {1}", value, GameManager.ConfigData.MaxTraining));
+		}
+	}
+}

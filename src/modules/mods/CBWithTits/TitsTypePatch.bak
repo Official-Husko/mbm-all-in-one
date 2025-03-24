@@ -1,0 +1,21 @@
+using System;
+using System.Runtime.CompilerServices;
+using ComplexBreeding.SpeciesCore.Data;
+using HarmonyLib;
+
+namespace CBwithTits
+{
+	// Token: 0x02000008 RID: 8
+	public class TitsTypePatch
+	{
+		// Token: 0x06000011 RID: 17 RVA: 0x0000245D File Offset: 0x0000065D
+		[NullableContext(1)]
+		[HarmonyAfter(new string[] { "mbm.complexbreeding" })]
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(HumanSpeciesCoreData), "TitsTypes", MethodType.Getter)]
+		public static void PostfixGetter(ref int[] __result)
+		{
+			__result = new int[] { 5 };
+		}
+	}
+}

@@ -1,0 +1,31 @@
+using System;
+using System.Runtime.CompilerServices;
+using HarmonyLib;
+using MBMScripts;
+
+namespace CBforDummies.Patches
+{
+	// Token: 0x02000013 RID: 19
+	[NullableContext(1)]
+	[Nullable(0)]
+	[HarmonyPatch(typeof(TraitInfo), "UpgradedValue")]
+	public class UpgradedValuePatch
+	{
+		// Token: 0x06000035 RID: 53 RVA: 0x00002CD1 File Offset: 0x00000ED1
+		[HarmonyAfter(new string[] { "mbm.complexbreeding" })]
+		[HarmonyPatch(MethodType.Getter)]
+		[HarmonyPostfix]
+		public static void PostfixGetter(Character __instance, ref float ___m_UpgradedValue, ref float __result)
+		{
+			__result = ___m_UpgradedValue;
+		}
+
+		// Token: 0x06000036 RID: 54 RVA: 0x00002CD7 File Offset: 0x00000ED7
+		[HarmonyAfter(new string[] { "mbm.complexbreeding" })]
+		[HarmonyPatch(MethodType.Setter, new Type[] { typeof(float) })]
+		[HarmonyPostfix]
+		public static void PostfixSetter(Character __instance, float value)
+		{
+		}
+	}
+}

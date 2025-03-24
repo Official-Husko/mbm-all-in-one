@@ -1,0 +1,166 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using BepInEx;
+using BepInEx.Configuration;
+using BepInEx.Core.Logging.Interpolation;
+using BepInEx.Logging;
+using BepInEx.Unity.Mono;
+using HarmonyLib;
+using HarmonyLib.Tools;
+using MBMScripts;
+
+namespace PixiesInPrivate
+{
+	// Token: 0x02000006 RID: 6
+	[NullableContext(1)]
+	[Nullable(0)]
+	[BepInPlugin("com.guyverek.PixiesInPrivate", "PixiesInPrivate", "2.0.0")]
+	public class PixiesInPrivatePlugin : BaseUnityPlugin
+	{
+		// Token: 0x06000006 RID: 6 RVA: 0x000020A0 File Offset: 0x000002A0
+		public PixiesInPrivatePlugin()
+		{
+			PixiesInPrivatePlugin.log = base.Logger;
+			PixiesInPrivatePlugin.Enabled = base.Config.Bind<bool>(new ConfigDefinition("General", "Enabled"), false, new ConfigDescription("Enables PixiesInPrivate plugin.", null, Array.Empty<object>()));
+			PixiesInPrivatePlugin.Enabled.SettingChanged += this.Enabled_Changed;
+			PixiesInPrivatePlugin.EnableDebug = base.Config.Bind<bool>(new ConfigDefinition("General", "EnableDebugLog"), false, new ConfigDescription("Enables PixiesInPrivate plugin debug log to file.", null, Array.Empty<object>()));
+		}
+
+		// Token: 0x06000007 RID: 7 RVA: 0x00002134 File Offset: 0x00000334
+		private void Enabled_Changed([Nullable(2)] object sender, EventArgs e)
+		{
+			this.ConfigureActions();
+		}
+
+		// Token: 0x06000008 RID: 8 RVA: 0x0000213C File Offset: 0x0000033C
+		private void ConfigureActions()
+		{
+			base.Logger.LogMessage("PixiesInPrivate is " + (PixiesInPrivatePlugin.Enabled.Value ? "enabled" : "disabled") + ".");
+		}
+
+		// Token: 0x06000009 RID: 9 RVA: 0x00002170 File Offset: 0x00000370
+		private void Awake()
+		{
+			this.ConfigureActions();
+			try
+			{
+				if (PixiesInPrivatePlugin.EnableDebug.Value)
+				{
+					HarmonyFileLog.Enabled = true;
+				}
+				ManualLogSource logger = base.Logger;
+				bool flag;
+				BepInExInfoLogInterpolatedStringHandler bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(30, 1, out flag);
+				if (flag)
+				{
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral("Installing ");
+					bepInExInfoLogInterpolatedStringHandler.AppendFormatted<string>("PixiesInPrivate");
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" Harmony patches...");
+				}
+				logger.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+				new Harmony("com.guyverek.PixiesInPrivate").PatchAll(typeof(PixiesInPrivatePlugin.UpdatePixyPatch));
+				ManualLogSource logger2 = base.Logger;
+				bepInExInfoLogInterpolatedStringHandler = new BepInExInfoLogInterpolatedStringHandler(28, 1, out flag);
+				if (flag)
+				{
+					bepInExInfoLogInterpolatedStringHandler.AppendFormatted<string>("PixiesInPrivate");
+					bepInExInfoLogInterpolatedStringHandler.AppendLiteral(" Harmony patches successful.");
+				}
+				logger2.LogInfo(bepInExInfoLogInterpolatedStringHandler);
+			}
+			catch
+			{
+				ManualLogSource logger3 = base.Logger;
+				bool flag;
+				BepInExErrorLogInterpolatedStringHandler bepInExErrorLogInterpolatedStringHandler = new BepInExErrorLogInterpolatedStringHandler(24, 1, out flag);
+				if (flag)
+				{
+					bepInExErrorLogInterpolatedStringHandler.AppendFormatted<string>("PixiesInPrivate");
+					bepInExErrorLogInterpolatedStringHandler.AppendLiteral(" Harmony patches failed!");
+				}
+				logger3.LogError(bepInExErrorLogInterpolatedStringHandler);
+			}
+		}
+
+		// Token: 0x04000004 RID: 4
+		public const string AUTHOR = "guyverek";
+
+		// Token: 0x04000005 RID: 5
+		public const string GUID = "com.guyverek.PixiesInPrivate";
+
+		// Token: 0x04000006 RID: 6
+		[Nullable(2)]
+		public static ManualLogSource log;
+
+		// Token: 0x04000007 RID: 7
+		[Nullable(2)]
+		public static ConfigEntry<bool> Enabled;
+
+		// Token: 0x04000008 RID: 8
+		[Nullable(2)]
+		public static ConfigEntry<bool> EnableDebug;
+
+		// Token: 0x04000009 RID: 9
+		private static readonly MethodInfo mIP = AccessTools.Method(typeof(Unit), "get_IsPrivate", null, null);
+
+		// Token: 0x0400000A RID: 10
+		private static readonly MethodInfo mIS = AccessTools.Method(typeof(Unit), "get_IsSelected", null, null);
+
+		// Token: 0x0400000B RID: 11
+		private static readonly MethodInfo GCRL = AccessTools.Method(typeof(PlayData), "GetClosedRoomList", null, null);
+
+		// Token: 0x02000008 RID: 8
+		[NullableContext(0)]
+		[HarmonyPatch(typeof(Female), "UpdatePixy")]
+		public static class UpdatePixyPatch
+		{
+			// Token: 0x0600000B RID: 11 RVA: 0x000022C0 File Offset: 0x000004C0
+			[NullableContext(1)]
+			private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+			{
+				if (!PixiesInPrivatePlugin.Enabled.Value)
+				{
+					return instructions;
+				}
+				bool flag = false;
+				bool flag2 = false;
+				List<CodeInstruction> list = new List<CodeInstruction>();
+				foreach (CodeInstruction codeInstruction in instructions)
+				{
+					if (!flag && codeInstruction.operand == PixiesInPrivatePlugin.mIP)
+					{
+						codeInstruction.operand = PixiesInPrivatePlugin.mIS;
+						flag = true;
+					}
+					if (!flag2 && codeInstruction.operand == PixiesInPrivatePlugin.GCRL)
+					{
+						list.Remove(list.Last<CodeInstruction>());
+						list.Add(new CodeInstruction(OpCodes.Ldarg_0, null));
+						list.Add(new CodeInstruction(OpCodes.Callvirt, PixiesInPrivatePlugin.mIP));
+						flag2 = true;
+					}
+					list.Add(codeInstruction);
+				}
+				if (PixiesInPrivatePlugin.EnableDebug.Value)
+				{
+					FileLog.LogBuffered("\n\n[PixiesInPrivate] Original opcodes:");
+					foreach (CodeInstruction codeInstruction2 in instructions)
+					{
+						FileLog.LogBuffered(string.Format("{0} - {1}", codeInstruction2.opcode, codeInstruction2.operand));
+					}
+					FileLog.LogBuffered("\n\n[PixiesInPrivate] Patched opcodes:");
+					foreach (CodeInstruction codeInstruction3 in list)
+					{
+						FileLog.LogBuffered(string.Format("{0} - {1}", codeInstruction3.opcode, codeInstruction3.operand));
+					}
+					FileLog.FlushBuffer();
+				}
+				return list.AsEnumerable<CodeInstruction>();
+			}
+		}
+	}
+}

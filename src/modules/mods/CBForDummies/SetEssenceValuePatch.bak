@@ -1,0 +1,94 @@
+using System;
+using System.Runtime.CompilerServices;
+using CBforDummies.Configuration;
+using ComplexBreeding;
+using ComplexBreeding.Species;
+using HarmonyLib;
+using MBMScripts;
+using UnityEngine;
+
+namespace CBforDummies.Patches
+{
+	// Token: 0x02000010 RID: 16
+	[NullableContext(1)]
+	[Nullable(0)]
+	[HarmonyPatch(typeof(NewFetusPatch), "SetEssenceValue", new Type[]
+	{
+		typeof(Character),
+		typeof(Character),
+		typeof(Character),
+		typeof(ETrait)
+	})]
+	public class SetEssenceValuePatch
+	{
+		// Token: 0x0600002D RID: 45 RVA: 0x00002B38 File Offset: 0x00000D38
+		public static bool Prefix(Character child, Character mainParent, Character subParent, ETrait essence)
+		{
+			return false;
+		}
+
+		// Token: 0x0600002E RID: 46 RVA: 0x00002B3C File Offset: 0x00000D3C
+		public static void Postfix(Character child, Character mainParent, Character subParent, ETrait essence)
+		{
+			if (CBforDummiesPlugin.GeneralConfig.EssenceInheritanceType == EssenceInheritanceType.Complex_Breeding)
+			{
+				SetEssenceValuePatch.ComplexBreeding_SetEssenceValue(child, mainParent, subParent, essence);
+				return;
+			}
+			int num = (int)mainParent.GetTraitValue(essence) + (int)mainParent.GetTraitUpgradedValue(essence);
+			int num2 = (int)subParent.GetTraitValue(essence) + (int)subParent.GetTraitUpgradedValue(essence);
+			int num3 = num + num2;
+			if (num3 > 0)
+			{
+				child.AddTrait(essence);
+				child.AddTraitValue(essence, (float)Math.Min(num3, 10));
+			}
+			if (num3 < 0)
+			{
+				child.AddTrait(essence);
+				child.AddTraitValue(essence, (float)Math.Max(num3, -10));
+			}
+		}
+
+		// Token: 0x0600002F RID: 47 RVA: 0x00002BBC File Offset: 0x00000DBC
+		private static void ComplexBreeding_SetEssenceValue(Character child, Character mainParent, Character subParent, ETrait essence)
+		{
+			int num = (int)mainParent.GetTraitValue(essence);
+			int num2 = (int)subParent.GetTraitValue(essence);
+			if (num == 0 && num2 == 0)
+			{
+				return;
+			}
+			int num3 = 1;
+			ISpeciesData speciesData;
+			if (GameData.TryGetSpecies(child, out speciesData) && speciesData != null)
+			{
+				num3 = speciesData.Tier;
+			}
+			GeneralConfigValues generalConfig = CBforDummiesPlugin.GeneralConfig;
+			int complexBreedingFormulaBaseChance = generalConfig.ComplexBreedingFormulaBaseChance;
+			int complexBreedingFormulaTierMultiplier = generalConfig.ComplexBreedingFormulaTierMultiplier;
+			int complexBreedingFormulaMainParentEssenceMultiplier = generalConfig.ComplexBreedingFormulaMainParentEssenceMultiplier;
+			int complexBreedingFormulaSubParentEssenceMultiplier = generalConfig.ComplexBreedingFormulaSubParentEssenceMultiplier;
+			int num4 = complexBreedingFormulaBaseChance + num3 * complexBreedingFormulaTierMultiplier + num * complexBreedingFormulaMainParentEssenceMultiplier + complexBreedingFormulaSubParentEssenceMultiplier * num2;
+			int num5 = generalConfig.ComplexBreedingFormulaDecreaseEssenceChance;
+			if (mainParent.TraitContains((ETrait)30))
+			{
+				num5 = 5;
+			}
+			if (num2 > 0 && Random.Range(1, 101) <= num4)
+			{
+				num++;
+			}
+			else if (Random.Range(1, 101) <= num5)
+			{
+				num--;
+			}
+			if (num > 0)
+			{
+				child.AddTrait(essence);
+				child.AddTraitValue(essence, (float)Math.Min(num, 10));
+			}
+		}
+	}
+}
