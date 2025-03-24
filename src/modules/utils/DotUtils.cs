@@ -11,7 +11,7 @@ namespace mbm_all_in_one.src.modules.utils
                 normal = { textColor = color },
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = 20,
-                padding = new RectOffset(-20, 0, 0, 0)
+                padding = new RectOffset(0, 0, 0, 0)
             };
         }
 

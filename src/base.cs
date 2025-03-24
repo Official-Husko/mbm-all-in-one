@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -59,11 +59,13 @@ namespace mbm_all_in_one.src
         private CheatManager _cheatManager;
         private bool _showMenu;
         private Rect _menuRect = new Rect(20, 20, 450, 300);
-        private Tab _currentTab = Tab.Cheats;
+        private Tab _currentTab = Tab.Player;
 
         private enum Tab
         {
-            Cheats,
+            Player,
+            Events,
+            NPCs,
             Mods
         }
 
@@ -112,7 +114,7 @@ namespace mbm_all_in_one.src
             UIUtils.DrawLabel("v" + MyPluginInfo.PLUGIN_VERSION, new Color(0.5f, 0.5f, 0.5f), new Rect(versionLabelX, versionLabelY, 100, 20));
 
             // Calculate the width of the author label
-            float authorLabelWidth = GUI.skin.label.CalcSize(new GUIContent("by Official-Husko")).x + 10;
+            float authorLabelWidth = GUI.skin.label.CalcSize(new GUIContent("by Official-Husko")).x + 12;
             float authorLabelX = _menuRect.xMax - authorLabelWidth - 10; // 10 pixels from right edge
             float authorLabelY = versionLabelY; // Align with version label
 
@@ -132,15 +134,23 @@ namespace mbm_all_in_one.src
 
             // Draw tabs
             GUILayout.BeginHorizontal();
-            DrawTabButton(Tab.Cheats, "Cheats");
+            DrawTabButton(Tab.Player, "Player");
+            DrawTabButton(Tab.Events, "Events");
+            DrawTabButton(Tab.NPCs, "NPCs");
             DrawTabButton(Tab.Mods, "Mods");
             GUILayout.EndHorizontal();
 
             // Draw content based on the selected tab
             switch (_currentTab)
             {
-                case Tab.Cheats:
-                    DrawCheatsTab();
+                case Tab.Player:
+                    DrawPlayerTab();
+                    break;
+                case Tab.Events:
+                    DrawEventsTab();
+                    break;
+                case Tab.NPCs:
+                    DrawNPCsTab();
                     break;
                 case Tab.Mods:
                     DrawModsTab();
@@ -159,7 +169,7 @@ namespace mbm_all_in_one.src
             }
         }
 
-        private void DrawCheatsTab()
+        private void DrawPlayerTab()
         {
             GUILayout.BeginVertical();
 
@@ -219,16 +229,27 @@ namespace mbm_all_in_one.src
                 _cheatAmountTexts[cheatName] = inputText;
             }
 
+        private void DrawEventsTab()
+        {
+            GUILayout.BeginVertical();
+            GUILayout.Label("Events:");
+            // Add event-related UI elements here
+            GUILayout.EndVertical();
+        }
+
+        private void DrawNPCsTab()
+        {
+            GUILayout.BeginVertical();
+            GUILayout.Label("NPCs:");
+            // Add NPC-related UI elements here
             GUILayout.EndVertical();
         }
 
         private void DrawModsTab()
         {
             GUILayout.BeginVertical();
-
             GUILayout.Label("Enabling and disabling mods requires a restart of the game!");
             // Add mod-related UI elements here
-
             GUILayout.EndVertical();
         }
     }
