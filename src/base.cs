@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -61,23 +61,31 @@ namespace mbm_all_in_one.src
         private Rect _menuRect = new Rect(20, 20, 450, 300);
         private Tab _currentTab = Tab.Player;
 
-        private enum Tab
-        {
-            Player,
-            Events,
-            NPCs,
-            Mods
-        }
-
         private Dictionary<string, string> _cheatAmountTexts = new Dictionary<string, string>();
 
         private readonly int LabelWidth = 250;
         private readonly int ButtonWidth = 100;
 
+        private PopupManager _popupManager;
+
+        private Vector2 _modsScrollPosition = Vector2.zero; // Add a field to track scroll position
+
+        private ExecuteEventCheat _executeEventCheat;
+
+        private Vector2 _eventsScrollPosition = Vector2.zero; // Add a field to track scroll position for events
+
         private void Start()
         {
             _cheatManager = new CheatManager();
             RegisterAllCheats();
+
+            _popupManager = gameObject.AddComponent<PopupManager>();
+            _popupManager.Initialize(Enum.GetNames(typeof(EItemType)), (selectedItem, amount) =>
+            {
+                GameManager.Instance.PlayerData.NewItem(selectedItem, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, amount);
+            });
+
+            _executeEventCheat = new ExecuteEventCheat();
         }
 
         private void RegisterAllCheats()
@@ -132,11 +140,16 @@ namespace mbm_all_in_one.src
 
             GUILayout.BeginVertical();
 
-            // Draw tabs
+            // Top row of tabs
             GUILayout.BeginHorizontal();
             DrawTabButton(Tab.Player, "Player");
             DrawTabButton(Tab.Events, "Events");
             DrawTabButton(Tab.NPCs, "NPCs");
+            GUILayout.EndHorizontal();
+
+            // Bottom row of tabs
+            GUILayout.BeginHorizontal();
+            DrawTabButton(Tab.Experimental, "Experimental");
             DrawTabButton(Tab.Mods, "Mods");
             GUILayout.EndHorizontal();
 
@@ -151,6 +164,9 @@ namespace mbm_all_in_one.src
                     break;
                 case Tab.NPCs:
                     DrawNPCsTab();
+                    break;
+                case Tab.Experimental:
+                    DrawExperimentalTab();
                     break;
                 case Tab.Mods:
                     DrawModsTab();
@@ -168,12 +184,12 @@ namespace mbm_all_in_one.src
                 _currentTab = tab;
             }
         }
-
+        
         private void DrawPlayerTab()
         {
             GUILayout.BeginVertical();
 
-            foreach (var cheat in _cheatManager.GetCheats())
+            foreach (var cheat in _cheatManager.GetCheats().Where(c => c.DisplayTab == Tab.Player))
             {
                 string cheatName = cheat.Name;
 
@@ -229,14 +245,52 @@ namespace mbm_all_in_one.src
                 _cheatAmountTexts[cheatName] = inputText;
             }
 
+            if (GUILayout.Button("Open Item Selector", GUILayout.Width(ButtonWidth)))
+            {
+                _popupManager.ShowPopup();
+            }
+
+            GUILayout.EndVertical();
+        }
+        
         private void DrawEventsTab()
         {
             GUILayout.BeginVertical();
             GUILayout.Label("Events:");
-            // Add event-related UI elements here
+
+            // Begin scroll view for events
+            _eventsScrollPosition = GUILayout.BeginScrollView(_eventsScrollPosition, GUILayout.Width(_menuRect.width - 20), GUILayout.Height(150));
+
+            foreach (var cheat in _cheatManager.GetCheats().Where(c => c.DisplayTab == Tab.Events))
+            {
+                if (cheat is ExecuteEventCheat eventCheat)
+                {
+                    eventCheat.DrawEventSelector();
+                }
+            }
+
+            GUILayout.EndScrollView(); // End scroll view
+
+            // Add padding between the scroll view and the execute button
+            GUILayout.Space(10);
+
+            // Execute button at the bottom
+            if (GUILayout.Button("Execute Event", GUILayout.ExpandWidth(true))) // Make execute button full width
+            {
+                // Ensure the correct instance of ExecuteEventCheat is used
+                foreach (var cheat in _cheatManager.GetCheats().Where(c => c.DisplayTab == Tab.Events))
+                {
+                    if (cheat is ExecuteEventCheat eventCheat)
+                    {
+                        eventCheat.Execute(0);
+                        break; // Execute only the first matching event cheat
+                    }
+                }
+            }
+
             GUILayout.EndVertical();
         }
-
+        
         private void DrawNPCsTab()
         {
             GUILayout.BeginVertical();
@@ -245,11 +299,68 @@ namespace mbm_all_in_one.src
             GUILayout.EndVertical();
         }
 
+        private void DrawExperimentalTab()
+        {
+            GUILayout.BeginVertical();
+            GUILayout.Label("Experimental:");
+            // Add experimental-related UI elements here
+            GUILayout.EndVertical();
+        }
+
         private void DrawModsTab()
         {
             GUILayout.BeginVertical();
-            GUILayout.Label("Enabling and disabling mods requires a restart of the game!");
-            // Add mod-related UI elements here
+
+            // Define styles for each category label with centered text
+            GUIStyle stableLabelStyle = new GUIStyle(GUI.skin.label)
+            {
+                normal = { textColor = Color.green },
+                alignment = TextAnchor.MiddleCenter
+            };
+            GUIStyle experimentalLabelStyle = new GUIStyle(GUI.skin.label)
+            {
+                normal = { textColor = new Color(1.0f, 0.65f, 0.0f) }, // Orange
+                alignment = TextAnchor.MiddleCenter
+            };
+            GUIStyle brokenLabelStyle = new GUIStyle(GUI.skin.label)
+            {
+                normal = { textColor = Color.red },
+                alignment = TextAnchor.MiddleCenter
+            };
+
+            // Begin scroll view
+            _modsScrollPosition = GUILayout.BeginScrollView(_modsScrollPosition, GUILayout.Width(_menuRect.width - 20), GUILayout.Height(200));
+
+            // Stable Mods Section
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("Stable Mods:", stableLabelStyle);
+            GUILayout.EndVertical();
+            // Add stable mod-related UI elements here
+            GUILayout.Label("Mod 1: Description of stable mod 1");
+            GUILayout.Label("Mod 2: Description of stable mod 2");
+
+            GUILayout.Space(10); // Add some space between sections
+
+            // Experimental Mods Section
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("Experimental Mods:", experimentalLabelStyle);
+            GUILayout.EndVertical();
+            // Add experimental mod-related UI elements here
+            GUILayout.Label("Mod 3: Description of experimental mod 3");
+            GUILayout.Label("Mod 4: Description of experimental mod 4");
+
+            GUILayout.Space(10); // Add some space between sections
+
+            // Broken Mods Section
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("Broken Mods:", brokenLabelStyle);
+            GUILayout.EndVertical();
+            // Add broken mod-related UI elements here
+            GUILayout.Label("Mod 5: Description of broken mod 5");
+            GUILayout.Label("Mod 6: Description of broken mod 6");
+
+            GUILayout.EndScrollView(); // End scroll view
+
             GUILayout.EndVertical();
         }
     }

@@ -9,6 +9,7 @@ namespace mbm_all_in_one.src.modules.cheats
     {
         public string Name => "All Items";
         public CheatType Type => CheatType.ExecuteWithInput;
+        public Tab DisplayTab => Tab.Player;
 
         public void Execute(int amount)
         {
