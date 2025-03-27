@@ -51,5 +51,15 @@ namespace mbm_all_in_one.src.modules.cheats
         {
             return _spawnableTypes[_currentTypeIndex].ToString();
         }
+
+        public EUnitType[] GetSpawnableTypes()
+        {
+            return _spawnableTypes;
+        }
+
+        public void SetCurrentTypeIndex(int index)
+        {
+            _currentTypeIndex = index;
+        }
     }
 } 

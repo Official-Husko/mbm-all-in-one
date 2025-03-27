@@ -10,7 +10,7 @@ namespace mbm_all_in_one.src.modules.utils
         public static IEnumerable<EItemType> GetAllItemTypes()
         {
             Debug.Log("Found " + Enum.GetValues(typeof(EItemType)).Length + " items");
-            return (EItemType[])Enum.GetValues(typeof(EItemType));
+            return EnumUtils.GetEnumValues<EItemType>();
         }
     }
 } 

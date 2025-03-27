@@ -64,10 +64,12 @@ namespace mbm_all_in_one.src
 
         private readonly Dictionary<string, string> _cheatAmountTexts = new Dictionary<string, string>();
 
-        private readonly int ButtonWidth = 100;
-
         private PopupManager _popupManager;
         private ExecuteEventCheat _executeEventCheat;
+
+        private bool _showDropdown = false;
+        private int _selectedNpcIndex = 0;
+        private Vector2 _dropdownScrollPosition = Vector2.zero;
 
         private void Start()
         {
@@ -202,7 +204,7 @@ namespace mbm_all_in_one.src
 
             GUILayout.EndVertical();
 
-            if (GUILayout.Button("Open Item Selector", GUILayout.Width(ButtonWidth)))
+            if (GUILayout.Button("Specific Item Spawner", GUILayout.ExpandWidth(true)))
             {
                 _popupManager.ShowPopup();
             }
@@ -245,30 +247,41 @@ namespace mbm_all_in_one.src
             var spawnSpecialSlaveCheat = _cheatManager.GetCheats().OfType<SpawnSpecialSlaveCheat>().FirstOrDefault();
             if (spawnSpecialSlaveCheat != null)
             {
-                GUILayout.Label("Spawn Special Slave");
+                GUILayout.Label("Spawn Specific NPC", GUILayout.ExpandWidth(true));
 
-                GUILayout.BeginHorizontal();
-                if (GUILayout.Button("-", GUILayout.Width(30)))
+                // Dropdown button
+                if (GUILayout.Button(spawnSpecialSlaveCheat.GetCurrentTypeName(), GUILayout.ExpandWidth(true)))
                 {
-                    spawnSpecialSlaveCheat.DecrementTypeIndex();
+                    _showDropdown = !_showDropdown;
                 }
 
-                GUILayout.Label(spawnSpecialSlaveCheat.GetCurrentTypeName(), GUILayout.Width(150));
-
-                if (GUILayout.Button("+", GUILayout.Width(30)))
+                // Dropdown menu
+                if (_showDropdown)
                 {
-                    spawnSpecialSlaveCheat.IncrementTypeIndex();
+                    _dropdownScrollPosition = GUILayout.BeginScrollView(_dropdownScrollPosition, GUILayout.Height(100));
+                    GUILayout.BeginVertical("box");
+                    for (int i = 0; i < spawnSpecialSlaveCheat.GetSpawnableTypes().Length; i++)
+                    {
+                        if (GUILayout.Button(spawnSpecialSlaveCheat.GetSpawnableTypes()[i].ToString()))
+                        {
+                            _selectedNpcIndex = i;
+                            spawnSpecialSlaveCheat.SetCurrentTypeIndex(i);
+                            _showDropdown = false;
+                        }
+                    }
+                    GUILayout.EndVertical();
+                    GUILayout.EndScrollView();
                 }
-                GUILayout.EndHorizontal();
 
-                if (GUILayout.Button("Spawn " + spawnSpecialSlaveCheat.GetCurrentTypeName(), GUILayout.Width(210)))
+                // Spawn button
+                if (GUILayout.Button("Spawn " + spawnSpecialSlaveCheat.GetCurrentTypeName(), GUILayout.ExpandWidth(true)))
                 {
                     spawnSpecialSlaveCheat.Execute(0);
                 }
             }
             else
             {
-                GUILayout.Label("No special slave cheat available.");
+                GUILayout.Label("No special slave cheat available.", GUILayout.ExpandWidth(true));
             }
 
             GUILayout.EndVertical();
