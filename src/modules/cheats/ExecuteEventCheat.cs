@@ -13,6 +13,7 @@ namespace mbm_all_in_one.src.modules.cheats
 
         private List<EPlayEventType> _availableEvents;
         private int _selectedEventIndex = 0;
+        private Vector2 _scrollPosition = Vector2.zero; // Persistent scroll position
 
         public ExecuteEventCheat()
         {
@@ -43,18 +44,24 @@ namespace mbm_all_in_one.src.modules.cheats
         public void DrawEventSelector()
         {
             GUILayout.BeginVertical();
-            GUILayout.Label("Select Event", GUILayout.Width(100));
+            
+            // Ensure the scroll view has a fixed height to enable scrolling
+            _scrollPosition = GUILayout.BeginScrollView(_scrollPosition, GUILayout.Height(150), GUILayout.ExpandWidth(true));
+            
             int newSelectedIndex = GUILayout.SelectionGrid(
                 _selectedEventIndex, 
                 _availableEvents.ConvertAll(e => e.ToString()).ToArray(), 
                 1, 
                 GUILayout.ExpandWidth(true)
             );
+            
             if (newSelectedIndex != _selectedEventIndex)
             {
                 _selectedEventIndex = newSelectedIndex;
                 Debug.Log($"Selected event index changed to: {_selectedEventIndex}");
             }
+            
+            GUILayout.EndScrollView();
             GUILayout.EndVertical();
         }
     }

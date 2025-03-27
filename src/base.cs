@@ -59,7 +59,7 @@ namespace mbm_all_in_one.src
     {
         private CheatManager _cheatManager;
         private bool _showMenu;
-        private Rect _menuRect = new Rect(20, 20, 450, 400);
+        private Rect _menuRect = new Rect(20, 20, 450, 600);
         private Tab _currentTab = Tab.Player;
 
         private readonly Dictionary<string, string> _cheatAmountTexts = new Dictionary<string, string>();

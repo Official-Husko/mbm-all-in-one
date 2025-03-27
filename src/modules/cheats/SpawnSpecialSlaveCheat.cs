@@ -30,6 +30,8 @@ namespace mbm_all_in_one.src.modules.cheats
             GameManager.Instance.PlayerData.NewNewCharacterAtKeepingRoom(selectedType);
             GameManager.Instance.OpenWindow(EGameWindow.KeepingRoom);
             GameManager.Instance.AddSystemMessage($"Spawned {selectedType}");
+            GameManager.Instance.PlayerData.SetGameEventFlag(EGameEvent.SavePoint_Nero, true);
+
         }
 
         public void Register(CheatManager cheatManager)
