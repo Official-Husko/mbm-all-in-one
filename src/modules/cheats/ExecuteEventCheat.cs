@@ -26,11 +26,12 @@ namespace mbm_all_in_one.src.modules.cheats
                 EPlayEventType selectedEvent = _availableEvents[_selectedEventIndex];
                 // Execute the selected event
                 PlayData.Instance.AddPlayEvent(selectedEvent);
-                Debug.Log($"Executed event: {selectedEvent}");
+                GameManager.Instance.AddSystemMessage($"Event {selectedEvent} executed");
             }
             else
             {
                 Debug.LogError("Invalid event index selected.");
+                GameManager.Instance.AddSystemMessage("Invalid event index selected.");
             }
         }
 

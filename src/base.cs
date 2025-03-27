@@ -28,13 +28,14 @@ namespace mbm_all_in_one.src
 
             // Add a new ModMenuUI component
             _modMenuUI = gameObject.AddComponent<ModMenuUI>();
+            GameManager.Instance.AddSystemMessage("MBM All In One v" + MyPluginInfo.PLUGIN_VERSION + " loaded");
         }
     }
 
     // Define the CheatManager class
     public class CheatManager
     {
-        private List<ICheat> _cheats = new List<ICheat>();
+        private readonly List<ICheat> _cheats = new List<ICheat>();
 
         public void RegisterCheat(ICheat cheat)
         {
@@ -58,21 +59,15 @@ namespace mbm_all_in_one.src
     {
         private CheatManager _cheatManager;
         private bool _showMenu;
-        private Rect _menuRect = new Rect(20, 20, 450, 300);
+        private Rect _menuRect = new Rect(20, 20, 450, 400);
         private Tab _currentTab = Tab.Player;
 
-        private Dictionary<string, string> _cheatAmountTexts = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> _cheatAmountTexts = new Dictionary<string, string>();
 
-        private readonly int LabelWidth = 250;
         private readonly int ButtonWidth = 100;
 
         private PopupManager _popupManager;
-
-        private Vector2 _modsScrollPosition = Vector2.zero; // Add a field to track scroll position
-
         private ExecuteEventCheat _executeEventCheat;
-
-        private Vector2 _eventsScrollPosition = Vector2.zero; // Add a field to track scroll position for events
 
         private void Start()
         {
@@ -200,66 +195,23 @@ namespace mbm_all_in_one.src
 
                 string inputText = _cheatAmountTexts[cheatName];
 
-                GUILayout.BeginHorizontal();
-                switch (cheat.Type)
-                {
-                    case CheatType.Toggle:
-                        DotUtils.DrawRedDot(); // or DrawGreenDot based on state
-                        GUILayout.Label($"Toggle {cheatName}", GUILayout.Width(LabelWidth)); // Fixed width for label
-                        if (GUILayout.Button("Toggle", GUILayout.Width(ButtonWidth))) // Fixed width for button
-                        {
-                            // Toggle logic here
-                        }
-                        break;
-
-                    case CheatType.ExecuteWithInput:
-                        DotUtils.DrawVioletDot();
-                        GUILayout.Label($"Add {cheatName} Amount", GUILayout.Width(LabelWidth)); // Fixed width for label
-                        inputText = GUILayout.TextField(inputText, GUILayout.Width(40)); // Fixed width for input
-                        if (GUILayout.Button("Execute", GUILayout.Width(ButtonWidth)) && int.TryParse(inputText, out int amount) && amount > 0) // Fixed width for button
-                        {
-                            cheat.Execute(amount);
-                        }
-                        break;
-
-                    case CheatType.Execute:
-                        DotUtils.DrawBlueDot();
-                        GUILayout.Label($"Execute {cheatName}", GUILayout.Width(LabelWidth)); // Fixed width for label
-                        if (GUILayout.Button("Execute", GUILayout.Width(ButtonWidth))) // Fixed width for button
-                        {
-                            cheat.Execute(0);
-                        }
-                        break;
-
-                    case CheatType.ListExecute:
-                        DotUtils.DrawYellowDot();
-                        GUILayout.Label($"List Execute {cheatName}", GUILayout.Width(LabelWidth)); // Fixed width for label
-                        if (GUILayout.Button("List Execute", GUILayout.Width(ButtonWidth))) // Fixed width for button
-                        {
-                            // List execute logic here
-                        }
-                        break;
-                }
-                GUILayout.EndHorizontal();
+                CheatUIUtils.DrawCheat(cheat, ref inputText, amount => cheat.Execute(amount));
 
                 _cheatAmountTexts[cheatName] = inputText;
             }
+
+            GUILayout.EndVertical();
 
             if (GUILayout.Button("Open Item Selector", GUILayout.Width(ButtonWidth)))
             {
                 _popupManager.ShowPopup();
             }
-
-            GUILayout.EndVertical();
         }
         
         private void DrawEventsTab()
         {
             GUILayout.BeginVertical();
-            GUILayout.Label("Events:");
-
-            // Begin scroll view for events
-            _eventsScrollPosition = GUILayout.BeginScrollView(_eventsScrollPosition, GUILayout.Width(_menuRect.width - 20), GUILayout.Height(150));
+            GUILayout.Label("Launch Specific Events");
 
             foreach (var cheat in _cheatManager.GetCheats().Where(c => c.DisplayTab == Tab.Events))
             {
@@ -269,21 +221,16 @@ namespace mbm_all_in_one.src
                 }
             }
 
-            GUILayout.EndScrollView(); // End scroll view
-
-            // Add padding between the scroll view and the execute button
             GUILayout.Space(10);
 
-            // Execute button at the bottom
-            if (GUILayout.Button("Execute Event", GUILayout.ExpandWidth(true))) // Make execute button full width
+            if (GUILayout.Button("Execute Event", GUILayout.ExpandWidth(true)))
             {
-                // Ensure the correct instance of ExecuteEventCheat is used
                 foreach (var cheat in _cheatManager.GetCheats().Where(c => c.DisplayTab == Tab.Events))
                 {
                     if (cheat is ExecuteEventCheat eventCheat)
                     {
                         eventCheat.Execute(0);
-                        break; // Execute only the first matching event cheat
+                        break;
                     }
                 }
             }
@@ -294,16 +241,46 @@ namespace mbm_all_in_one.src
         private void DrawNPCsTab()
         {
             GUILayout.BeginVertical();
-            GUILayout.Label("NPCs:");
-            // Add NPC-related UI elements here
+
+            var spawnSpecialSlaveCheat = _cheatManager.GetCheats().OfType<SpawnSpecialSlaveCheat>().FirstOrDefault();
+            if (spawnSpecialSlaveCheat != null)
+            {
+                GUILayout.Label("Spawn Special Slave");
+
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("-", GUILayout.Width(30)))
+                {
+                    spawnSpecialSlaveCheat.DecrementTypeIndex();
+                }
+
+                GUILayout.Label(spawnSpecialSlaveCheat.GetCurrentTypeName(), GUILayout.Width(150));
+
+                if (GUILayout.Button("+", GUILayout.Width(30)))
+                {
+                    spawnSpecialSlaveCheat.IncrementTypeIndex();
+                }
+                GUILayout.EndHorizontal();
+
+                if (GUILayout.Button("Spawn " + spawnSpecialSlaveCheat.GetCurrentTypeName(), GUILayout.Width(210)))
+                {
+                    spawnSpecialSlaveCheat.Execute(0);
+                }
+            }
+            else
+            {
+                GUILayout.Label("No special slave cheat available.");
+            }
+
             GUILayout.EndVertical();
         }
 
         private void DrawExperimentalTab()
         {
             GUILayout.BeginVertical();
+
             GUILayout.Label("Experimental:");
             // Add experimental-related UI elements here
+
             GUILayout.EndVertical();
         }
 
@@ -328,9 +305,6 @@ namespace mbm_all_in_one.src
                 alignment = TextAnchor.MiddleCenter
             };
 
-            // Begin scroll view
-            _modsScrollPosition = GUILayout.BeginScrollView(_modsScrollPosition, GUILayout.Width(_menuRect.width - 20), GUILayout.Height(200));
-
             // Stable Mods Section
             GUILayout.BeginVertical(GUI.skin.box);
             GUILayout.Label("Stable Mods:", stableLabelStyle);
@@ -339,7 +313,7 @@ namespace mbm_all_in_one.src
             GUILayout.Label("Mod 1: Description of stable mod 1");
             GUILayout.Label("Mod 2: Description of stable mod 2");
 
-            GUILayout.Space(10); // Add some space between sections
+            GUILayout.Space(10);
 
             // Experimental Mods Section
             GUILayout.BeginVertical(GUI.skin.box);
@@ -349,7 +323,7 @@ namespace mbm_all_in_one.src
             GUILayout.Label("Mod 3: Description of experimental mod 3");
             GUILayout.Label("Mod 4: Description of experimental mod 4");
 
-            GUILayout.Space(10); // Add some space between sections
+            GUILayout.Space(10);
 
             // Broken Mods Section
             GUILayout.BeginVertical(GUI.skin.box);
@@ -358,8 +332,6 @@ namespace mbm_all_in_one.src
             // Add broken mod-related UI elements here
             GUILayout.Label("Mod 5: Description of broken mod 5");
             GUILayout.Label("Mod 6: Description of broken mod 6");
-
-            GUILayout.EndScrollView(); // End scroll view
 
             GUILayout.EndVertical();
         }

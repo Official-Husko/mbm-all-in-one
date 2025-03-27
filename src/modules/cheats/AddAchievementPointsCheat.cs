@@ -14,6 +14,7 @@ namespace mbm_all_in_one.src.modules.cheats
         {
             // Logic to add pixy
             GameManager.Instance.PlayerData.AchievementPoint += amount;
+            GameManager.Instance.AddSystemMessage($"Achievement points added: {amount}");
         }
         public void Register(CheatManager cheatManager)
         {

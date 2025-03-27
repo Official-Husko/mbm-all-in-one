@@ -25,10 +25,12 @@ namespace mbm_all_in_one.src.modules.cheats
                 try
                 {
                     GameManager.Instance.PlayerData.NewItem(itemType, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, amount);
+                    GameManager.Instance.AddSystemMessage($"{itemType} added to inventory");
                 }
                 catch (Exception ex)
                 {
                     Debug.LogError($"Failed to add {itemType}: {ex.Message}");
+                    GameManager.Instance.AddSystemMessage($"Failed to add {itemType}: {ex.Message}");
                 }
             }
             GameManager.Instance.PlayerData.NewItem(EItemType.Item_HumanDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, amount);

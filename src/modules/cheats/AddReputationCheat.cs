@@ -14,6 +14,7 @@ namespace mbm_all_in_one.src.modules.cheats
         {
             // Logic to add pixy
             GameManager.Instance.PlayerData.Reputation += amount;
+            GameManager.Instance.AddSystemMessage($"Reputation added: {amount}");
         }
 
         public void Register(CheatManager cheatManager)

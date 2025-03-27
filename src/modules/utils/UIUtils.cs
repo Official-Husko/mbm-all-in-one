@@ -18,5 +18,15 @@ namespace mbm_all_in_one.src.modules.utils
             GUI.backgroundColor = originalColor;
             return result;
         }
+
+        public static Vector2 BeginScrollView(Vector2 scrollPosition, float width, float height)
+        {
+            return GUILayout.BeginScrollView(scrollPosition, GUILayout.Width(width), GUILayout.Height(height));
+        }
+
+        public static void EndScrollView()
+        {
+            GUILayout.EndScrollView();
+        }
     }
 } 
