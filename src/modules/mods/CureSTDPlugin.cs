@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-using JetBrains.Annotations;
 using mbm_all_in_one.src.modules.mods.MBMModsServices;
 using MBMScripts;
 
@@ -79,17 +78,6 @@ namespace mbm_all_in_one.src.modules.mods
                 character.VenerealDisease = false;
                 ToolsPlugin.GameMessage(text, "E07369");
             }
-        }
-
-        public ModMetadata GetMetadata()
-        {
-            return new ModMetadata
-            {
-                Name = "CureSTD",
-                Version = version_string,
-                Category = "Stable",
-                Incompatibilities = new string[] { "SomeOtherMod" }
-            };
         }
     }
 }

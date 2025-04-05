@@ -318,6 +318,8 @@ namespace mbm_all_in_one.src
                 alignment = TextAnchor.MiddleCenter
             };
 
+            GUILayout.BeginVertical(GUI.skin.box);
+
             // Stable Mods Section
             GUILayout.BeginVertical(GUI.skin.box);
             GUILayout.Label("Stable Mods:", stableLabelStyle);
@@ -345,6 +347,8 @@ namespace mbm_all_in_one.src
             // Add broken mod-related UI elements here
             GUILayout.Label("Mod 5: Description of broken mod 5");
             GUILayout.Label("Mod 6: Description of broken mod 6");
+
+            GUILayout.EndVertical();
 
             GUILayout.EndVertical();
         }
