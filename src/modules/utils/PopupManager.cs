@@ -10,13 +10,13 @@ namespace mbm_all_in_one.src.modules.utils
         private Vector2 _scrollPosition = Vector2.zero;
         private int _selectedItemIndex = 0;
         private string _selectedItemAmount = "1";
-        private string[] _itemNames;
+        private EItemType[] _itemTypes;
         private Action<EItemType, int> _onExecute;
         private Rect _popupRect = new Rect((Screen.width - 320) / 2, (Screen.height - 240) / 2, 320, 240);
 
-        public void Initialize(string[] itemNames, Action<EItemType, int> onExecute)
+        public void Initialize(EItemType[] itemTypes, Action<EItemType, int> onExecute)
         {
-            _itemNames = itemNames;
+            _itemTypes = itemTypes;
             _onExecute = onExecute;
         }
 
@@ -66,11 +66,11 @@ namespace mbm_all_in_one.src.modules.utils
 
             // Scrollable list of items
             _scrollPosition = GUILayout.BeginScrollView(_scrollPosition, GUILayout.Width(280), GUILayout.Height(100));
-            for (int i = 0; i < _itemNames.Length; i++)
+            for (int i = 0; i < _itemTypes.Length; i++)
             {
-                if (_itemNames[i] != "None") // Exclude "None" item
+                if (_itemTypes[i].ToString() != "None") // Exclude "None" item
                 {
-                    if (GUILayout.Button(_itemNames[i]))
+                    if (GUILayout.Button(_itemTypes[i].ToString()))
                     {
                         _selectedItemIndex = i;
                     }
@@ -91,7 +91,7 @@ namespace mbm_all_in_one.src.modules.utils
             // Execute button
             if (GUILayout.Button("Execute") && int.TryParse(_selectedItemAmount, out int amount) && amount > 0)
             {
-                var selectedItem = (EItemType)Enum.Parse(typeof(EItemType), _itemNames[_selectedItemIndex]);
+                var selectedItem = _itemTypes[_selectedItemIndex];
                 _onExecute?.Invoke(selectedItem, amount);
                 ClosePopup();
             }
@@ -128,4 +128,4 @@ namespace mbm_all_in_one.src.modules.utils
             return result;
         }
     }
-} 
+}

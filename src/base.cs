@@ -39,10 +39,10 @@ namespace mbm_all_in_one.src
     {
         private CheatManager _cheatManager;
         private bool _showMenu;
-        private Rect _menuRect = new Rect(20, 20, 450, 600);
+        private Rect _menuRect = new(20, 20, 450, 600);
         private Tab _currentTab = Tab.Player;
 
-        private readonly Dictionary<string, string> _cheatAmountTexts = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> _cheatAmountTexts = new();
 
         private PopupManager _popupManager;
         private ExecuteEventCheat _executeEventCheat;
@@ -59,7 +59,7 @@ namespace mbm_all_in_one.src
             RegisterAllCheats();
 
             _popupManager = gameObject.AddComponent<PopupManager>();
-            _popupManager.Initialize(Enum.GetNames(typeof(EItemType)), (selectedItem, amount) =>
+            _popupManager.Initialize(ItemUtils.GetAllItemTypes().ToArray(), (selectedItem, amount) =>
             {
                 GameManager.Instance.PlayerData.NewItem(selectedItem, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, amount);
             });
@@ -69,11 +69,11 @@ namespace mbm_all_in_one.src
             // Initialize dynamic tab definitions
             _tabs = new List<mbm_all_in_one.src.TabDefinition>
             {
-                new mbm_all_in_one.src.TabDefinition(Tab.Player, "Player", DrawPlayerTab),
-                new mbm_all_in_one.src.TabDefinition(Tab.Events, "Events", DrawEventsTab),
-                new mbm_all_in_one.src.TabDefinition(Tab.NPCs, "NPCs", DrawNPCsTab),
-                new mbm_all_in_one.src.TabDefinition(Tab.Experimental, "Experimental", DrawExperimentalTab),
-                new mbm_all_in_one.src.TabDefinition(Tab.Mods, "Mods", DrawModsTab)
+                new(Tab.Player, "Player", DrawPlayerTab),
+                new(Tab.Events, "Events", DrawEventsTab),
+                new(Tab.NPCs, "NPCs", DrawNPCsTab),
+                new(Tab.Experimental, "Experimental", DrawExperimentalTab),
+                new(Tab.Mods, "Mods", DrawModsTab)
             };
         }
 
