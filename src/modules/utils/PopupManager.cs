@@ -89,7 +89,7 @@ namespace mbm_all_in_one.src.modules.utils
             GUILayout.Space(10); // Add space between the input and the buttons
 
             // Execute button
-            if (GUILayout.Button("Execute") && int.TryParse(_selectedItemAmount, out int amount) && amount > 0)
+            if (GUILayout.Button("Execute") && mbm_all_in_one.src.modules.utils.CheatUIUtils.IsValidAmount(_selectedItemAmount, out int amount))
             {
                 var selectedItem = _itemTypes[_selectedItemIndex];
                 _onExecute?.Invoke(selectedItem, amount);

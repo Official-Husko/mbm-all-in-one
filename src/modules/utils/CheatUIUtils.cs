@@ -43,7 +43,7 @@ namespace mbm_all_in_one.src.modules.utils
                     GUILayout.Label($"Add {cheat.Name} Amount", GUILayout.Width(180));
                     inputText = GUILayout.TextField(inputText, GUILayout.Width(80));
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("Execute", GUILayout.Width(buttonWidth)) && int.TryParse(inputText, out int amount) && amount > 0)
+                    if (GUILayout.Button("Execute", GUILayout.Width(buttonWidth)) && IsValidAmount(inputText, out int amount))
                         executeAction.Invoke(amount);
                     break;
                 case CheatType.Execute:
@@ -62,6 +62,11 @@ namespace mbm_all_in_one.src.modules.utils
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
+        }
+
+        public static bool IsValidAmount(string input, out int amount)
+        {
+            return int.TryParse(input, out amount) && amount > 0;
         }
     }
 }
