@@ -1,7 +1,7 @@
 # 🐉 Monster Black Market All-In-One Mod
 
 Welcome to the **Monster Black Market All-In-One Mod** project!
-This is a powerful, modular plugin for Unity-based games, built as a **BepInEx** mod, designed to enhance gameplay with a suite of cheats, mod management, and developer tools—all accessible through a sleek in-game menu.
+This is a powerful, modular mod for MBM or Monster Black Market, built as a **BepInEx** mod, designed to enhance gameplay with a suite of cheats, mod management, and developer tools—all accessible through a sleek in-game menu.
 
 ---
 
