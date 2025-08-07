@@ -1,6 +1,7 @@
 using System;
 using MBMScripts;
 using mbm_all_in_one.src.modules.utils;
+using mbm_all_in_one.src.Managers;
 
 namespace mbm_all_in_one.src.modules.cheats
 {
@@ -17,9 +18,9 @@ namespace mbm_all_in_one.src.modules.cheats
             GameManager.Instance.AddSystemMessage($"Pixy added: {amount}");
         }
 
-        public void Register(CheatManager cheatManager)
+        public void Register(mbm_all_in_one.src.Managers.CheatManager cheatManager)
         {
             cheatManager.RegisterCheat(this);
         }
     }
-} 
+}

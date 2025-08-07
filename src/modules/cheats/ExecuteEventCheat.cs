@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using MBMScripts;
+using mbm_all_in_one.src.Managers;
 using mbm_all_in_one.src.modules.utils;
 using UnityEngine;
 
@@ -36,7 +37,7 @@ namespace mbm_all_in_one.src.modules.cheats
             }
         }
 
-        public void Register(CheatManager cheatManager)
+        public void Register(mbm_all_in_one.src.Managers.CheatManager cheatManager)
         {
             cheatManager.RegisterCheat(this);
         }
@@ -65,4 +66,4 @@ namespace mbm_all_in_one.src.modules.cheats
             GUILayout.EndVertical();
         }
     }
-} 
+}

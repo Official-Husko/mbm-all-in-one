@@ -8,6 +8,8 @@ using UnityEngine;
 using mbm_all_in_one.src.modules.cheats; // Updated namespace
 using mbm_all_in_one.src.modules.utils;
 using System.Runtime.InteropServices; // Updated namespace
+using mbm_all_in_one.src.Managers;
+using mbm_all_in_one.src; // Add this to ensure TabDefinition is found
 
 namespace mbm_all_in_one.src
 {
@@ -32,30 +34,8 @@ namespace mbm_all_in_one.src
         }
     }
 
-    // Define the CheatManager class
-    public class CheatManager
-    {
-        private readonly List<ICheat> _cheats = new List<ICheat>();
-
-        public void RegisterCheat(ICheat cheat)
-        {
-            _cheats.Add(cheat);
-        }
-
-        public IEnumerable<ICheat> GetCheats()
-        {
-            return _cheats;
-        }
-
-        public void ExecuteCheat(string name, int amount)
-        {
-            var cheat = _cheats.FirstOrDefault(c => c.Name == name);
-            cheat?.Execute(amount);
-        }
-    }
-
     // UI Manager to handle rendering
-    public class ModMenuUI : MonoBehaviour
+    public partial class ModMenuUI : MonoBehaviour
     {
         private CheatManager _cheatManager;
         private bool _showMenu;
@@ -71,6 +51,8 @@ namespace mbm_all_in_one.src
         private int _selectedNpcIndex = 0;
         private Vector2 _dropdownScrollPosition = Vector2.zero;
 
+        private List<TabDefinition> _tabs;
+
         private void Start()
         {
             _cheatManager = new CheatManager();
@@ -83,18 +65,21 @@ namespace mbm_all_in_one.src
             });
 
             _executeEventCheat = new ExecuteEventCheat();
+
+            // Initialize dynamic tab definitions
+            _tabs = new List<TabDefinition>
+            {
+                new TabDefinition(Tab.Player, "Player", DrawPlayerTab),
+                new TabDefinition(Tab.Events, "Events", DrawEventsTab),
+                new TabDefinition(Tab.NPCs, "NPCs", DrawNPCsTab),
+                new TabDefinition(Tab.Experimental, "Experimental", DrawExperimentalTab),
+                new TabDefinition(Tab.Mods, "Mods", DrawModsTab)
+            };
         }
 
         private void RegisterAllCheats()
         {
-            var cheatTypes = Assembly.GetExecutingAssembly().GetTypes()
-                .Where(t => typeof(IRegisterableCheat).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
-
-            foreach (var type in cheatTypes)
-            {
-                var cheat = (IRegisterableCheat)Activator.CreateInstance(type);
-                cheat.Register(_cheatManager);
-            }
+            _cheatManager.RegisterAllCheats();
         }
 
         private void Update()
@@ -137,51 +122,22 @@ namespace mbm_all_in_one.src
 
             GUILayout.BeginVertical();
 
-            // Top row of tabs
+            // Draw tab buttons dynamically
             GUILayout.BeginHorizontal();
-            DrawTabButton(Tab.Player, "Player");
-            DrawTabButton(Tab.Events, "Events");
-            DrawTabButton(Tab.NPCs, "NPCs");
-            GUILayout.EndHorizontal();
-
-            // Bottom row of tabs
-            GUILayout.BeginHorizontal();
-            DrawTabButton(Tab.Experimental, "Experimental");
-            DrawTabButton(Tab.Mods, "Mods");
-            GUILayout.EndHorizontal();
-
-            // Draw content based on the selected tab
-            switch (_currentTab)
+            foreach (var tabDef in _tabs)
             {
-                case Tab.Player:
-                    DrawPlayerTab();
-                    break;
-                case Tab.Events:
-                    DrawEventsTab();
-                    break;
-                case Tab.NPCs:
-                    DrawNPCsTab();
-                    break;
-                case Tab.Experimental:
-                    DrawExperimentalTab();
-                    break;
-                case Tab.Mods:
-                    DrawModsTab();
-                    break;
+                GUI.backgroundColor = _currentTab == tabDef.Tab ? Color.white : Color.grey;
+                if (GUILayout.Button(tabDef.Label))
+                    _currentTab = tabDef.Tab;
             }
+            GUILayout.EndHorizontal();
+
+            // Draw content for the selected tab
+            _tabs.First(t => t.Tab == _currentTab).DrawContent();
 
             GUILayout.EndVertical();
         }
 
-        private void DrawTabButton(Tab tab, string label)
-        {
-            GUI.backgroundColor = _currentTab == tab ? Color.white : Color.grey;
-            if (GUILayout.Button(label))
-            {
-                _currentTab = tab;
-            }
-        }
-        
         private void DrawPlayerTab()
         {
             GUILayout.BeginVertical();
@@ -301,22 +257,10 @@ namespace mbm_all_in_one.src
         {
             GUILayout.BeginVertical();
 
-            // Define styles for each category label with centered text
-            GUIStyle stableLabelStyle = new GUIStyle(GUI.skin.label)
-            {
-                normal = { textColor = Color.green },
-                alignment = TextAnchor.MiddleCenter
-            };
-            GUIStyle experimentalLabelStyle = new GUIStyle(GUI.skin.label)
-            {
-                normal = { textColor = new Color(1.0f, 0.65f, 0.0f) }, // Orange
-                alignment = TextAnchor.MiddleCenter
-            };
-            GUIStyle brokenLabelStyle = new GUIStyle(GUI.skin.label)
-            {
-                normal = { textColor = Color.red },
-                alignment = TextAnchor.MiddleCenter
-            };
+            // Use styles from ModCategoryStyles
+            var stableLabelStyle = UI.ModCategoryStyles.StableLabelStyle;
+            var experimentalLabelStyle = UI.ModCategoryStyles.ExperimentalLabelStyle;
+            var brokenLabelStyle = UI.ModCategoryStyles.BrokenLabelStyle;
 
             GUILayout.BeginVertical(GUI.skin.box);
 
@@ -351,6 +295,25 @@ namespace mbm_all_in_one.src
             GUILayout.EndVertical();
 
             GUILayout.EndVertical();
+        }
+
+        private class TabDefinition
+        {
+            public Tab Tab { get; }
+            public string Label { get; }
+            private readonly Action _drawContent;
+
+            public TabDefinition(Tab tab, string label, Action drawContent)
+            {
+                Tab = tab;
+                Label = label;
+                _drawContent = drawContent;
+            }
+
+            public void DrawContent()
+            {
+                _drawContent.Invoke();
+            }
         }
     }
 }

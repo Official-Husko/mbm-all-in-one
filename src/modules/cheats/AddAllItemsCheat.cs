@@ -1,5 +1,6 @@
 using System;
 using MBMScripts;
+using mbm_all_in_one.src.Managers;
 using mbm_all_in_one.src.modules.utils;
 using UnityEngine;
 
@@ -36,9 +37,9 @@ namespace mbm_all_in_one.src.modules.cheats
             GameManager.Instance.PlayerData.NewItem(EItemType.Item_HumanDna, ESector.Inventory, new ValueTuple<int, int>(0, 0), -1, amount);
         }
 
-        public void Register(CheatManager cheatManager)
+        public void Register(mbm_all_in_one.src.Managers.CheatManager cheatManager)
         {
             cheatManager.RegisterCheat(this);
         }
     }
-} 
+}
