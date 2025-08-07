@@ -7,7 +7,7 @@
             "request": "launch",
             "preLaunchTask": "build dll linux",
             "args": [],
-            "program": "",
+            "program": "/bin/true",
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "internalConsoleOptions": "neverOpen",

@@ -51,7 +51,7 @@ namespace mbm_all_in_one.src
         private int _selectedNpcIndex = 0;
         private Vector2 _dropdownScrollPosition = Vector2.zero;
 
-        private List<TabDefinition> _tabs;
+        private List<mbm_all_in_one.src.TabDefinition> _tabs;
 
         private void Start()
         {
@@ -67,13 +67,13 @@ namespace mbm_all_in_one.src
             _executeEventCheat = new ExecuteEventCheat();
 
             // Initialize dynamic tab definitions
-            _tabs = new List<TabDefinition>
+            _tabs = new List<mbm_all_in_one.src.TabDefinition>
             {
-                new TabDefinition(Tab.Player, "Player", DrawPlayerTab),
-                new TabDefinition(Tab.Events, "Events", DrawEventsTab),
-                new TabDefinition(Tab.NPCs, "NPCs", DrawNPCsTab),
-                new TabDefinition(Tab.Experimental, "Experimental", DrawExperimentalTab),
-                new TabDefinition(Tab.Mods, "Mods", DrawModsTab)
+                new mbm_all_in_one.src.TabDefinition(Tab.Player, "Player", DrawPlayerTab),
+                new mbm_all_in_one.src.TabDefinition(Tab.Events, "Events", DrawEventsTab),
+                new mbm_all_in_one.src.TabDefinition(Tab.NPCs, "NPCs", DrawNPCsTab),
+                new mbm_all_in_one.src.TabDefinition(Tab.Experimental, "Experimental", DrawExperimentalTab),
+                new mbm_all_in_one.src.TabDefinition(Tab.Mods, "Mods", DrawModsTab)
             };
         }
 
@@ -98,21 +98,8 @@ namespace mbm_all_in_one.src
             GUI.backgroundColor = new Color(0.1f, 0.1f, 0.1f);
             _menuRect = GUI.Window(0, _menuRect, MenuWindow, "----< Mod Menu >----");
 
-            // Draw version label at bottom left corner
-            float versionLabelX = _menuRect.xMin + 10; // 10 pixels from left edge
-            float versionLabelY = _menuRect.yMax - 30; // 30 pixels from bottom edge
-            UIUtils.DrawLabel("v" + MyPluginInfo.PLUGIN_VERSION, new Color(0.5f, 0.5f, 0.5f), new Rect(versionLabelX, versionLabelY, 100, 20));
-
-            // Calculate the width of the author label
-            float authorLabelWidth = GUI.skin.label.CalcSize(new GUIContent("by Official-Husko")).x + 12;
-            float authorLabelX = _menuRect.xMax - authorLabelWidth - 10; // 10 pixels from right edge
-            float authorLabelY = versionLabelY; // Align with version label
-
-            // Draw the author label as a clickable label
-            if (UIUtils.DrawButton("<color=cyan>by</color> <color=yellow>Official-Husko</color>", Color.clear, new Rect(authorLabelX, authorLabelY, authorLabelWidth, 20)))
-            {
-                Application.OpenURL("https://github.com/Official-Husko/mbm-all-in-one");
-            }
+            // Draw version and author footer using utility
+            UIUtils.DrawFooter(MyPluginInfo.PLUGIN_VERSION, "<color=cyan>by</color> <color=yellow>Official-Husko</color>", "https://github.com/Official-Husko/mbm-all-in-one", _menuRect);
         }
 
         private void MenuWindow(int windowID)
@@ -124,12 +111,7 @@ namespace mbm_all_in_one.src
 
             // Draw tab buttons dynamically
             GUILayout.BeginHorizontal();
-            foreach (var tabDef in _tabs)
-            {
-                GUI.backgroundColor = _currentTab == tabDef.Tab ? Color.white : Color.grey;
-                if (GUILayout.Button(tabDef.Label))
-                    _currentTab = tabDef.Tab;
-            }
+            mbm_all_in_one.src.modules.utils.UITabUtils.DrawTabButtons(_tabs, _currentTab, tab => _currentTab = tab);
             GUILayout.EndHorizontal();
 
             // Draw content for the selected tab
@@ -264,56 +246,28 @@ namespace mbm_all_in_one.src
 
             GUILayout.BeginVertical(GUI.skin.box);
 
-            // Stable Mods Section
-            GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.Label("Stable Mods:", stableLabelStyle);
-            GUILayout.EndVertical();
-            // Add stable mod-related UI elements here
-            GUILayout.Label("Mod 1: Description of stable mod 1");
-            GUILayout.Label("Mod 2: Description of stable mod 2");
+            mbm_all_in_one.src.modules.utils.UIUtils.DrawSection("Stable Mods:", stableLabelStyle, () => {
+                GUILayout.Label("Mod 1: Description of stable mod 1");
+                GUILayout.Label("Mod 2: Description of stable mod 2");
+            });
 
             GUILayout.Space(10);
 
-            // Experimental Mods Section
-            GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.Label("Experimental Mods:", experimentalLabelStyle);
-            GUILayout.EndVertical();
-            // Add experimental mod-related UI elements here
-            GUILayout.Label("Mod 3: Description of experimental mod 3");
-            GUILayout.Label("Mod 4: Description of experimental mod 4");
+            mbm_all_in_one.src.modules.utils.UIUtils.DrawSection("Experimental Mods:", experimentalLabelStyle, () => {
+                GUILayout.Label("Mod 3: Description of experimental mod 3");
+                GUILayout.Label("Mod 4: Description of experimental mod 4");
+            });
 
             GUILayout.Space(10);
 
-            // Broken Mods Section
-            GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.Label("Broken Mods:", brokenLabelStyle);
-            GUILayout.EndVertical();
-            // Add broken mod-related UI elements here
-            GUILayout.Label("Mod 5: Description of broken mod 5");
-            GUILayout.Label("Mod 6: Description of broken mod 6");
+            mbm_all_in_one.src.modules.utils.UIUtils.DrawSection("Broken Mods:", brokenLabelStyle, () => {
+                GUILayout.Label("Mod 5: Description of broken mod 5");
+                GUILayout.Label("Mod 6: Description of broken mod 6");
+            });
 
             GUILayout.EndVertical();
 
             GUILayout.EndVertical();
-        }
-
-        private class TabDefinition
-        {
-            public Tab Tab { get; }
-            public string Label { get; }
-            private readonly Action _drawContent;
-
-            public TabDefinition(Tab tab, string label, Action drawContent)
-            {
-                Tab = tab;
-                Label = label;
-                _drawContent = drawContent;
-            }
-
-            public void DrawContent()
-            {
-                _drawContent.Invoke();
-            }
         }
     }
 }
