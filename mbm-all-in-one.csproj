@@ -37,6 +37,11 @@
     <Reference Include="./reference/Assembly-CSharp.dll">
       <Private>False</Private>
     </Reference>
+
+    <!-- UnityEngine.UI Assembly -->
+    <Reference Include="./reference/UnityEngine.UI.dll">
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="Build">
