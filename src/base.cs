@@ -10,6 +10,8 @@ using mbm_all_in_one.src.modules.utils;
 using System.Runtime.InteropServices; // Updated namespace
 using mbm_all_in_one.src.Managers;
 using mbm_all_in_one.src; // Add this to ensure TabDefinition is found
+using mbm_all_in_one.src.modules.mods; // Add this using directive
+using mbm_all_in_one.src.modules.mods; // Duplicate for partial class visibility
 
 namespace mbm_all_in_one.src
 {
@@ -52,6 +54,36 @@ namespace mbm_all_in_one.src
         private Vector2 _dropdownScrollPosition = Vector2.zero;
 
         private List<mbm_all_in_one.src.TabDefinition> _tabs;
+
+        private static List<ModInfo> _stableMods = new();
+        private static List<ModInfo> _experimentalMods = new();
+        private static List<ModInfo> _brokenMods = new();
+
+        static ModMenuUI()
+        {
+            // Reflection-based mod discovery
+            var modInfoType = typeof(ModInfo);
+            var allTypes = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(a => a.GetTypes())
+                .Where(t => t.IsClass && t.IsPublic && t.GetProperty("ModInfo", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public) != null);
+            foreach (var type in allTypes)
+            {
+                var modInfoProp = type.GetProperty("ModInfo", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+                if (modInfoProp != null && modInfoProp.PropertyType == modInfoType)
+                {
+                    var modInfo = (ModInfo)modInfoProp.GetValue(null);
+                    if (modInfo != null)
+                    {
+                        switch (modInfo.Category?.ToLowerInvariant())
+                        {
+                            case "stable": _stableMods.Add(modInfo); break;
+                            case "experimental": _experimentalMods.Add(modInfo); break;
+                            case "broken": _brokenMods.Add(modInfo); break;
+                        }
+                    }
+                }
+            }
+        }
 
         private void Start()
         {
@@ -247,22 +279,43 @@ namespace mbm_all_in_one.src
             GUILayout.BeginVertical(GUI.skin.box);
 
             mbm_all_in_one.src.modules.utils.UIUtils.DrawSection("Stable Mods:", stableLabelStyle, () => {
-                GUILayout.Label("Mod 1: Description of stable mod 1");
-                GUILayout.Label("Mod 2: Description of stable mod 2");
+                foreach (var mod in _stableMods)
+                {
+                    GUILayout.BeginVertical(UI.ModCategoryStyles.ModCardStyle);
+                    GUILayout.Label($"<color=#b3b3b3ff>{mod.Name}</color> <size=12><color=#888888ff>v{mod.Version}</color></size>", UI.ModCategoryStyles.ModNameStyle);
+                    GUILayout.Label($"by {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
+                    GUILayout.Label(mod.Description, UI.ModCategoryStyles.ModDescriptionStyle);
+                    GUILayout.EndVertical();
+                    GUILayout.Space(4);
+                }
             });
 
             GUILayout.Space(10);
 
             mbm_all_in_one.src.modules.utils.UIUtils.DrawSection("Experimental Mods:", experimentalLabelStyle, () => {
-                GUILayout.Label("Mod 3: Description of experimental mod 3");
-                GUILayout.Label("Mod 4: Description of experimental mod 4");
+                foreach (var mod in _experimentalMods)
+                {
+                    GUILayout.BeginVertical(UI.ModCategoryStyles.ModCardStyle);
+                    GUILayout.Label($"<color=#b3b3b3ff>{mod.Name}</color> <size=12><color=#888888ff>v{mod.Version}</color></size>", UI.ModCategoryStyles.ModNameStyle);
+                    GUILayout.Label($"by {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
+                    GUILayout.Label(mod.Description, UI.ModCategoryStyles.ModDescriptionStyle);
+                    GUILayout.EndVertical();
+                    GUILayout.Space(4);
+                }
             });
 
             GUILayout.Space(10);
 
             mbm_all_in_one.src.modules.utils.UIUtils.DrawSection("Broken Mods:", brokenLabelStyle, () => {
-                GUILayout.Label("Mod 5: Description of broken mod 5");
-                GUILayout.Label("Mod 6: Description of broken mod 6");
+                foreach (var mod in _brokenMods)
+                {
+                    GUILayout.BeginVertical(UI.ModCategoryStyles.ModCardStyle);
+                    GUILayout.Label($"<color=#b3b3b3ff>{mod.Name}</color> <size=12><color=#888888ff>v{mod.Version}</color></size>", UI.ModCategoryStyles.ModNameStyle);
+                    GUILayout.Label($"by {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
+                    GUILayout.Label(mod.Description, UI.ModCategoryStyles.ModDescriptionStyle);
+                    GUILayout.EndVertical();
+                    GUILayout.Space(4);
+                }
             });
 
             GUILayout.EndVertical();

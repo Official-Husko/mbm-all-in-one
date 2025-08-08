@@ -31,7 +31,6 @@
   <ItemGroup>
     <!-- Explicitly include source files, excluding .bak files -->
     <Compile Include="src/**/*.cs" Exclude="src/**/*.bak" />
-    <Compile Remove="src/modules/mods/**" />
 
     <!-- MBM Assembly -->
     <Reference Include="./reference/Assembly-CSharp.dll">

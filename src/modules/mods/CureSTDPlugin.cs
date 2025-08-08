@@ -28,6 +28,18 @@ namespace mbm_all_in_one.src.modules.mods
         public static GameManager GM => ToolsPlugin.GM;
         public static PlayData PD => ToolsPlugin.PD;
 
+        public static ModInfo ModInfo {
+            get {
+                return new ModInfo {
+                    Name = name_string,
+                    Author = author_string,
+                    Version = version_string,
+                    Description = "Automatically cures STDs from owned characters.",
+                    Category = "Stable"
+                };
+            }
+        }
+
         public CureSTD()
         {
             log = Logger;
