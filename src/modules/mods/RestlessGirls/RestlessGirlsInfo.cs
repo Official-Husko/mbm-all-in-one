@@ -1,19 +1,19 @@
 using mbm_all_in_one.src.modules.mods;
 
-namespace mbm_all_in_one.src.modules.mods.CureSTD
+namespace mbm_all_in_one.src.modules.mods.RestlessGirls
 {
     /// <summary>
-    /// Static info and registration for the CureSTD mod.
+    /// Static info and registration for the RestlessGirls mod.
     /// </summary>
-    public static class CureSTDInfo
+    public static class RestlessGirlsInfo
     {
-        public const string Name = "CureSTD";
+        public const string Name = "RestlessGirls";
         public const string Author = "paw_beans";
-        public const string Version = "3.0.0";
-        public const string Guid = "com.mbmaio.CureSTD";
-        public const string Description = "Automatically cures STDs from owned characters.";
-        public const string Category = "Stable";
         public const string OriginalAuthor = "SoapBoxHero";
+        public const string Version = "3.0.0";
+        public const string Guid = "com.mbmaio.RestlessGirls";
+        public const string Description = "Reduces rest time for girls before starting a new activity.";
+        public const string Category = "Stable";
 
         /// <summary>
         /// ModInfo property for reflection-based mod registration.

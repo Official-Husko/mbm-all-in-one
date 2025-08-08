@@ -283,7 +283,7 @@ namespace mbm_all_in_one.src
                 {
                     GUILayout.BeginVertical(UI.ModCategoryStyles.ModCardStyle);
                     GUILayout.Label($"<color=#b3b3b3ff>{mod.Name}</color> <size=12><color=#888888ff>v{mod.Version}</color></size>", UI.ModCategoryStyles.ModNameStyle);
-                    GUILayout.Label($"by {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
+                    GUILayout.Label($"by {mod.OriginalAuthor} & {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
                     GUILayout.Label(mod.Description, UI.ModCategoryStyles.ModDescriptionStyle);
                     GUILayout.EndVertical();
                     GUILayout.Space(4);
@@ -297,7 +297,7 @@ namespace mbm_all_in_one.src
                 {
                     GUILayout.BeginVertical(UI.ModCategoryStyles.ModCardStyle);
                     GUILayout.Label($"<color=#b3b3b3ff>{mod.Name}</color> <size=12><color=#888888ff>v{mod.Version}</color></size>", UI.ModCategoryStyles.ModNameStyle);
-                    GUILayout.Label($"by {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
+                    GUILayout.Label($"by {mod.OriginalAuthor} & {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
                     GUILayout.Label(mod.Description, UI.ModCategoryStyles.ModDescriptionStyle);
                     GUILayout.EndVertical();
                     GUILayout.Space(4);
@@ -311,7 +311,7 @@ namespace mbm_all_in_one.src
                 {
                     GUILayout.BeginVertical(UI.ModCategoryStyles.ModCardStyle);
                     GUILayout.Label($"<color=#b3b3b3ff>{mod.Name}</color> <size=12><color=#888888ff>v{mod.Version}</color></size>", UI.ModCategoryStyles.ModNameStyle);
-                    GUILayout.Label($"by {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
+                    GUILayout.Label($"by {mod.OriginalAuthor} & {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
                     GUILayout.Label(mod.Description, UI.ModCategoryStyles.ModDescriptionStyle);
                     GUILayout.EndVertical();
                     GUILayout.Space(4);

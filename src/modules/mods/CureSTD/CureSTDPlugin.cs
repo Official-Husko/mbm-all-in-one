@@ -22,11 +22,6 @@ namespace mbm_all_in_one.src.modules.mods.CureSTD
         private CureSTDService _service;
 
         /// <summary>
-        /// Static ModInfo property for reflection-based mod registration.
-        /// </summary>
-        public static ModInfo ModInfo => CureSTDInfo.ModInfo;
-
-        /// <summary>
         /// Initializes config and service.
         /// </summary>
         public CureSTDPlugin()
