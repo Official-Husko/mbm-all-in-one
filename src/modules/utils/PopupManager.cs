@@ -13,6 +13,7 @@ namespace mbm_all_in_one.src.modules.utils
         private EItemType[] _itemTypes;
         private Action<EItemType, int> _onExecute;
         private Rect _popupRect = new Rect((Screen.width - 320) / 2, (Screen.height - 240) / 2, 320, 240);
+        private string _message = null;
 
         public void Initialize(EItemType[] itemTypes, Action<EItemType, int> onExecute)
         {
@@ -24,6 +25,14 @@ namespace mbm_all_in_one.src.modules.utils
         {
             _showPopup = true;
             // Stop game input
+            GameManager.Instance.StopCamera = true;
+            GameManager.Instance.StopWheel = true;
+        }
+
+        public void ShowMessage(string message)
+        {
+            _message = message;
+            _showPopup = true;
             GameManager.Instance.StopCamera = true;
             GameManager.Instance.StopWheel = true;
         }
@@ -64,42 +73,55 @@ namespace mbm_all_in_one.src.modules.utils
 
             GUILayout.BeginVertical(popupStyle);
 
-            // Scrollable list of items
-            _scrollPosition = GUILayout.BeginScrollView(_scrollPosition, GUILayout.Width(280), GUILayout.Height(100));
-            for (int i = 0; i < _itemTypes.Length; i++)
+            if (_message != null)
             {
-                if (_itemTypes[i].ToString() != "None") // Exclude "None" item
+                GUILayout.Label(_message, GUILayout.ExpandHeight(true));
+                GUILayout.Space(10);
+                if (GUILayout.Button("OK"))
                 {
-                    if (GUILayout.Button(_itemTypes[i].ToString()))
-                    {
-                        _selectedItemIndex = i;
-                    }
+                    ClosePopup();
+                    _message = null;
                 }
             }
-            GUILayout.EndScrollView();
-
-            GUILayout.Space(10); // Add space between the list and the input
-
-            // Input field for amount with label
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Amount:", GUILayout.Width(60));
-            _selectedItemAmount = GUILayout.TextField(_selectedItemAmount, GUILayout.Width(200));
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(10); // Add space between the input and the buttons
-
-            // Execute button
-            if (GUILayout.Button("Execute") && mbm_all_in_one.src.modules.utils.CheatUIUtils.IsValidAmount(_selectedItemAmount, out int amount))
+            else
             {
-                var selectedItem = _itemTypes[_selectedItemIndex];
-                _onExecute?.Invoke(selectedItem, amount);
-                ClosePopup();
-            }
+                // Scrollable list of items
+                _scrollPosition = GUILayout.BeginScrollView(_scrollPosition, GUILayout.Width(280), GUILayout.Height(100));
+                for (int i = 0; i < _itemTypes.Length; i++)
+                {
+                    if (_itemTypes[i].ToString() != "None") // Exclude "None" item
+                    {
+                        if (GUILayout.Button(_itemTypes[i].ToString()))
+                        {
+                            _selectedItemIndex = i;
+                        }
+                    }
+                }
+                GUILayout.EndScrollView();
 
-            // Close button
-            if (GUILayout.Button("Close"))
-            {
-                ClosePopup();
+                GUILayout.Space(10); // Add space between the list and the input
+
+                // Input field for amount with label
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Amount:", GUILayout.Width(60));
+                _selectedItemAmount = GUILayout.TextField(_selectedItemAmount, GUILayout.Width(200));
+                GUILayout.EndHorizontal();
+
+                GUILayout.Space(10); // Add space between the input and the buttons
+
+                // Execute button
+                if (GUILayout.Button("Execute") && mbm_all_in_one.src.modules.utils.CheatUIUtils.IsValidAmount(_selectedItemAmount, out int amount))
+                {
+                    var selectedItem = _itemTypes[_selectedItemIndex];
+                    _onExecute?.Invoke(selectedItem, amount);
+                    ClosePopup();
+                }
+
+                // Close button
+                if (GUILayout.Button("Close"))
+                {
+                    ClosePopup();
+                }
             }
 
             GUILayout.EndVertical();

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using MBMScripts;
-using BepInEx.Logging;
 
 namespace mbm_all_in_one.src.modules.mods.CureSTD
 {
@@ -10,25 +9,25 @@ namespace mbm_all_in_one.src.modules.mods.CureSTD
     /// </summary>
     public class CureSTDService
     {
-        private readonly ManualLogSource _log;
+        private readonly Action<string> _log;
         private readonly Func<IEnumerable<Female>> _getFemales;
         private readonly Func<IEnumerable<Male>> _getMales;
-        private readonly Func<string> _excludePhrase;
+    private readonly Func<List<string>> _excludePhrases;
         private readonly Action<string, string> _gameMessage;
 
         /// <summary>
         /// Initializes the service with required dependencies.
         /// </summary>
-        public CureSTDService(ManualLogSource log,
+        public CureSTDService(Action<string> log,
             Func<IEnumerable<Female>> getFemales,
             Func<IEnumerable<Male>> getMales,
-            Func<string> excludePhrase,
+            Func<List<string>> excludePhrases,
             Action<string, string> gameMessage)
         {
             _log = log;
             _getFemales = getFemales;
             _getMales = getMales;
-            _excludePhrase = excludePhrase;
+            _excludePhrases = excludePhrases;
             _gameMessage = gameMessage;
         }
 
@@ -49,11 +48,17 @@ namespace mbm_all_in_one.src.modules.mods.CureSTD
         private void CureCharacter(Character character)
         {
             if (character == null || !character.VenerealDisease) return;
-            var exclude = _excludePhrase();
-            if (!string.IsNullOrEmpty(exclude) && character.DisplayName.Contains(exclude)) return;
+            var excludeList = _excludePhrases();
+            if (excludeList != null && excludeList.Count > 0)
+            {
+                foreach (var phrase in excludeList)
+                {
+                    if (!string.IsNullOrEmpty(phrase) && character.DisplayName.Contains(phrase)) return;
+                }
+            }
             character.VenerealDisease = false;
             _gameMessage($"Curing STD of {character.DisplayName}...", "E07369");
-            _log?.LogInfo($"Cured STD for {character.DisplayName}");
+            _log?.Invoke($"Cured STD for {character.DisplayName}");
         }
     }
 }

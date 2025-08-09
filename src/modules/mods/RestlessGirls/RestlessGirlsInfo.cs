@@ -26,5 +26,13 @@ namespace mbm_all_in_one.src.modules.mods.RestlessGirls
             Description = Description,
             Category = Category
         };
+
+        /// <summary>
+        /// Self-register this mod's info and factory with the loader.
+        /// </summary>
+        public static void RegisterMod(System.Action<string, ModInfo, System.Func<object>> register, System.Func<bool> getEnabled, System.Func<float> getRestTime)
+        {
+            register(Name, ModInfo, () => new RestlessGirlsPlugin(getEnabled, getRestTime));
+        }
     }
 }

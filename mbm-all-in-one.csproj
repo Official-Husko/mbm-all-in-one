@@ -21,6 +21,7 @@
     <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
     <PackageReference Include="BepInEx.Core" Version="5.*" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="UnityEngine.Modules" Version="2020.3.37" IncludeAssets="compile" />
   </ItemGroup>
   
@@ -44,6 +45,6 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="Build">
-    <Exec Command='mv bin/net472/mbm_all_in_one.dll "/home/pawbeans/Downloads/Monster Black Market V2.0.16.0 w DLC w Uncen/BepInEx/scripts/"' />
+    <Exec Command="mv bin/net472/mbm_all_in_one.dll &quot;/home/pawbeans/Downloads/Monster Black Market V2.0.16.0 w DLC w Uncen/BepInEx/scripts/&quot;" />
   </Target>
 </Project>

@@ -1,59 +1,55 @@
 using System;
-using BepInEx;
-using BepInEx.Configuration;
-using BepInEx.Logging;
-using HarmonyLib;
+using UnityEngine;
 using MBMScripts;
 
 namespace mbm_all_in_one.src.modules.mods.RestlessGirls
 {
-    [BepInPlugin(RestlessGirlsInfo.Guid, RestlessGirlsInfo.Name, RestlessGirlsInfo.Version)]
-    public class RestlessGirlsPlugin : BaseUnityPlugin
+    /// <summary>
+    /// Modular RestlessGirls logic, only started if enabled by the loader.
+    /// </summary>
+    public class RestlessGirlsPlugin
     {
-        public static ManualLogSource log;
-        public static ConfigEntry<float> RestTime;
-        public static ConfigEntry<bool> Enabled;
-        private static float _backup;
+        private float _backup;
         private RestlessGirlsService _service;
+        private Func<bool> _getEnabled;
+        private Func<float> _getRestTime;
 
-        /// <summary>
-        /// Initializes config and service.
-        /// </summary>
-        public RestlessGirlsPlugin()
+        public RestlessGirlsPlugin(Func<bool> getEnabled, Func<float> getRestTime)
         {
-            log = Logger;
-            Enabled = Config.Bind("General", "Enabled", true, "Enables RestlessGirls plugin.");
-            Enabled.SettingChanged += Enabled_Changed;
-            RestTime = Config.Bind("General", "RestTime", 5f, new ConfigDescription("The time that a girl will rest before starting a new activity.", new AcceptableValueRange<float>(1f, 64f)));
-            if (GameManager.ConfigData != null && _backup == 0f)
+            _getEnabled = getEnabled;
+            _getRestTime = getRestTime;
+        }
+
+        public void Init()
+        {
+            DebugPrint("[RestlessGirls] Enabled");
+            ConfigureActions();
+        }
+
+        public void Disable()
+        {
+            DebugPrint("[RestlessGirls] Disabled");
+        }
+
+        public void UpdateSettings()
+        {
+            if (_service != null)
             {
-                _backup = GameManager.ConfigData.RestTime;
-                Inform($"Original rest time is {_backup}sec.");
+                // If needed, update service with new rest time, etc.
             }
-            _service = new RestlessGirlsService(RestTime, Enabled, _backup);
         }
 
-        private void Message(string msg) => Logger.LogMessage(msg);
-        private void Inform(string msg) => Logger.LogInfo(msg);
-
-        private void Enabled_Changed(object sender, EventArgs e)
+        private void ConfigureActions()
         {
-            Message($"RestlessGirls is {(Enabled.Value ? "enabled" : "disabled")}.");
+            if (_service == null)
+            {
+                _service = new RestlessGirlsService(_getRestTime(), _getEnabled(), _backup);
+            }
         }
 
-        private void Awake()
+        private void DebugPrint(string msg)
         {
-            Inform("Starting RestlessGirls...");
-            new Harmony(RestlessGirlsInfo.Guid).PatchAll(typeof(RestlessGirlsPlugin));
-            Inform("RestlessGirls Harmony patches successful.");
-        }
-
-        [HarmonyPatch(typeof(ConfigData), "RestTime", MethodType.Getter)]
-        [HarmonyPrefix]
-        public static bool ConfigData_get_RestTime(ref float __result, ConfigData __instance)
-        {
-            __result = (RestTime != null && RestTime.Value > 0f && Enabled != null && Enabled.Value) ? RestTime.Value : _backup;
-            return false;
+            UnityEngine.Debug.Log(msg);
         }
     }
 }

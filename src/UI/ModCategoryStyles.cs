@@ -24,22 +24,29 @@ namespace mbm_all_in_one.src.UI
 
         public static GUIStyle ModCardStyle {
             get {
-                var style = new GUIStyle(GUI.skin.box)
-                {
-                    margin = new RectOffset(4, 4, 2, 2),
-                    padding = new RectOffset(8, 8, 4, 4),
-                    border = new RectOffset(1, 1, 1, 1),
-                    alignment = TextAnchor.UpperLeft,
-                    fontSize = 14
-                };
-                // Use a dark, semi-transparent background
-                var bg = new Texture2D(1, 1);
-                bg.SetPixel(0, 0, new Color(0.13f, 0.13f, 0.13f, 0.85f));
-                bg.Apply();
-                style.normal.background = bg;
-                return style;
+                if (_modCardStyle == null) {
+                    _modCardStyle = new GUIStyle(GUI.skin.box)
+                    {
+                        margin = new RectOffset(4, 4, 2, 2),
+                        padding = new RectOffset(8, 8, 4, 4),
+                        border = new RectOffset(1, 1, 1, 1),
+                        alignment = TextAnchor.UpperLeft,
+                        fontSize = 14
+                    };
+                    if (_modCardBg == null) {
+                        _modCardBg = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+                        // Use a darker gray for better contrast
+                        _modCardBg.SetPixel(0, 0, new Color(0.22f, 0.22f, 0.22f, 1f));
+                        _modCardBg.Apply();
+                    }
+                    _modCardStyle.normal.background = _modCardBg;
+                }
+                return _modCardStyle;
             }
         }
+
+        private static GUIStyle _modCardStyle;
+    private static Texture2D _modCardBg;
 
         public static GUIStyle ModNameStyle => new GUIStyle(GUI.skin.label)
         {

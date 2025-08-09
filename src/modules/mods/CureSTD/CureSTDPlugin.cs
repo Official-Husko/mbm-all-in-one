@@ -1,61 +1,75 @@
 using System;
+using UnityEngine;
 using System.Collections.Generic;
-using BepInEx;
-using BepInEx.Configuration;
-using BepInEx.Logging;
 using mbm_all_in_one.src.modules.mods.CureSTD;
 using mbm_all_in_one.src.modules.mods.MBMModsServices;
 using MBMScripts;
 
+
 namespace mbm_all_in_one.src.modules.mods.CureSTD
 {
     /// <summary>
-    /// BepInEx plugin entry for CureSTD.
+    /// Modular CureSTD logic, only started if enabled by the loader.
     /// </summary>
-    [BepInPlugin(CureSTDInfo.Guid, CureSTDInfo.Name, CureSTDInfo.Version)]
-    public class CureSTDPlugin : BaseUnityPlugin
+    public class CureSTDPlugin
     {
-        public ConfigEntry<string> ExcludePhrase { get; private set; }
-        public ConfigEntry<bool> Enabled { get; private set; }
         private static PeriodicAction _cvd;
         private static float _period = 3f;
         private CureSTDService _service;
+        private Func<bool> _getEnabled;
+        private Func<List<string>> _getExcludePhrases;
 
-        /// <summary>
-        /// Initializes config and service.
-        /// </summary>
-        public CureSTDPlugin()
+        public CureSTDPlugin(Func<bool> getEnabled, Func<List<string>> getExcludePhrases)
         {
-            Enabled = Config.Bind("General", "Enabled", true, "Enables CureSTD plugin.");
-            Enabled.SettingChanged += Enabled_Changed;
-            ExcludePhrase = Config.Bind("General", "ExcludePhrase", "sickly", "If this exact phrase is in a character's name, they won't be cured.");
+            _getEnabled = getEnabled;
+            _getExcludePhrases = getExcludePhrases;
         }
 
-        private void Enabled_Changed(object sender, EventArgs e)
+        public void Init()
         {
+            DebugPrint("[CureSTD] Enabled");
             ConfigureActions();
+        }
+
+        public void Disable()
+        {
+            DebugPrint("[CureSTD] Disabled");
+            if (_cvd != null) _cvd.enabled = false;
+        }
+
+        public void UpdateSettings()
+        {
+            if (_cvd != null)
+            {
+                _cvd.enabled = _getEnabled();
+            }
+            if (_service != null)
+            {
+                // If needed, update service with new exclude phrases, etc.
+            }
         }
 
         private void ConfigureActions()
         {
             if (_cvd != null)
             {
-                _cvd.enabled = Enabled.Value;
-                Logger.LogInfo($"{(Enabled.Value ? "Enabled" : "Disabled")} CureSTD action.");
+                _cvd.enabled = _getEnabled();
+                DebugPrint($"[CureSTD] {(_getEnabled() ? "Enabled" : "Disabled")} CureSTD action.");
                 return;
             }
-            _service = new CureSTDService(Logger,
+            _service = new CureSTDService(
+                msg => DebugPrint("[CureSTD] " + msg),
                 () => CharacterAccessTool.GetOwnedFemales(),
                 () => CharacterAccessTool.GetOwnedMales(),
-                () => ExcludePhrase.Value,
+                _getExcludePhrases,
                 ToolsPlugin.GameMessage);
-            _cvd = ToolsPlugin.RegisterPeriodicAction(_period, _service.Run, Enabled.Value);
-            Logger.LogMessage($"Registered CureSTD action for period of {_period} sec.");
+            _cvd = ToolsPlugin.RegisterPeriodicAction(_period, _service.Run, _getEnabled());
+            DebugPrint($"[CureSTD] Registered CureSTD action for period of {_period} sec.");
         }
 
-        public void Awake()
+        private void DebugPrint(string msg)
         {
-            ConfigureActions();
+            UnityEngine.Debug.Log(msg);
         }
     }
 }

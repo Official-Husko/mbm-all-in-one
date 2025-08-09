@@ -11,7 +11,10 @@ using System.Runtime.InteropServices; // Updated namespace
 using mbm_all_in_one.src.Managers;
 using mbm_all_in_one.src; // Add this to ensure TabDefinition is found
 using mbm_all_in_one.src.modules.mods; // Add this using directive
-using mbm_all_in_one.src.modules.mods; // Duplicate for partial class visibility
+using mbm_all_in_one.src.modules.mods.CureSTD;
+using mbm_all_in_one.src.modules.mods.RestlessGirls;
+using mbm_all_in_one.src.modules.mods.NoTitsLimit;
+using mbm_all_in_one.src.modules.mods.PixiesInPrivate;
 
 namespace mbm_all_in_one.src
 {
@@ -39,6 +42,10 @@ namespace mbm_all_in_one.src
     // UI Manager to handle rendering
     public partial class ModMenuUI : MonoBehaviour
     {
+        // Scroll positions for mod categories
+        private Vector2 _stableModsScroll;
+        private Vector2 _experimentalModsScroll;
+        private Vector2 _brokenModsScroll;
         private CheatManager _cheatManager;
         private bool _showMenu;
         private Rect _menuRect = new(20, 20, 450, 600);
@@ -58,35 +65,65 @@ namespace mbm_all_in_one.src
         private static List<ModInfo> _stableMods = new();
         private static List<ModInfo> _experimentalMods = new();
         private static List<ModInfo> _brokenMods = new();
+        private static Dictionary<string, ModInfo> _allModInfos = new();
+        private static Dictionary<string, Func<object>> _modFactories = new();
 
-        static ModMenuUI()
+        // In-memory mod state/settings (stateless)
+        private Dictionary<string, bool> _modEnabledStates = new();
+        private Dictionary<string, string> _modStringSettings = new();
+        private Dictionary<string, float> _modFloatSettings = new();
+
+        private bool _restartRequired = false;
+
+        // Called by each mod's RegisterMod
+        private static void RegisterMod(string name, ModInfo info, Func<object> factory)
         {
-            // Reflection-based mod discovery
-            var modInfoType = typeof(ModInfo);
-            var allTypes = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(a => a.GetTypes())
-                .Where(t => t.IsClass && t.IsPublic && t.GetProperty("ModInfo", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public) != null);
-            foreach (var type in allTypes)
-            {
-                var modInfoProp = type.GetProperty("ModInfo", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-                if (modInfoProp != null && modInfoProp.PropertyType == modInfoType)
-                {
-                    var modInfo = (ModInfo)modInfoProp.GetValue(null);
-                    if (modInfo != null)
-                    {
-                        switch (modInfo.Category?.ToLowerInvariant())
-                        {
-                            case "stable": _stableMods.Add(modInfo); break;
-                            case "experimental": _experimentalMods.Add(modInfo); break;
-                            case "broken": _brokenMods.Add(modInfo); break;
-                        }
-                    }
+            _allModInfos[name] = info;
+            _modFactories[name] = factory;
+        }
+
+        // Register mods with correct delegates for live settings
+        private void RegisterAllMods()
+        {
+            // CureSTD
+            CureSTDInfo.RegisterMod(
+                (name, info, factory) => RegisterMod(name, info, factory),
+                () => _modEnabledStates.TryGetValue("CureSTD", out var en) && en,
+                () => {
+                    var csv = _modStringSettings.TryGetValue("curestd_exclude_phrases", out var s) ? s : "sickly";
+                    var arr = csv.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    var list = new List<string>();
+                    foreach (var str in arr) { var trimmed = str.Trim(); if (!string.IsNullOrEmpty(trimmed)) list.Add(trimmed); }
+                    return list;
                 }
-            }
+            );
+            // RestlessGirls
+            RestlessGirlsInfo.RegisterMod(
+                (name, info, factory) => RegisterMod(name, info, factory),
+                () => _modEnabledStates.TryGetValue("RestlessGirls", out var en) && en,
+                () => _modFloatSettings.TryGetValue("restlessgirls_resttime", out var f) ? f : 5f
+            );
+            // NoTitsLimit
+            NoTitsLimitInfo.RegisterMod(
+                (name, info, factory) => RegisterMod(name, info, factory),
+                () => _modEnabledStates.TryGetValue("NoTitsLimit", out var en) && en
+            );
+            // PixiesInPrivate
+            PixiesInPrivateInfo.RegisterMod(
+                (name, info, factory) => RegisterMod(name, info, factory),
+                () => _modEnabledStates.TryGetValue("PixiesInPrivate", out var en) && en
+            );
         }
 
         private void Start()
         {
+            RegisterAllMods();
+
+            // Populate mod category lists for UI
+            _stableMods = _allModInfos.Values.Where(m => string.Equals(m.Category, "Stable", StringComparison.OrdinalIgnoreCase)).ToList();
+            _experimentalMods = _allModInfos.Values.Where(m => string.Equals(m.Category, "Experimental", StringComparison.OrdinalIgnoreCase)).ToList();
+            _brokenMods = _allModInfos.Values.Where(m => string.Equals(m.Category, "Broken", StringComparison.OrdinalIgnoreCase)).ToList();
+
             _cheatManager = new CheatManager();
             RegisterAllCheats();
 
@@ -270,56 +307,140 @@ namespace mbm_all_in_one.src
         private void DrawModsTab()
         {
             GUILayout.BeginVertical();
-
-            // Use styles from ModCategoryStyles
             var stableLabelStyle = UI.ModCategoryStyles.StableLabelStyle;
             var experimentalLabelStyle = UI.ModCategoryStyles.ExperimentalLabelStyle;
             var brokenLabelStyle = UI.ModCategoryStyles.BrokenLabelStyle;
 
-            GUILayout.BeginVertical(GUI.skin.box);
+            // Helper to draw mod cards with toggles, settings, and status
+            void DrawModList(IEnumerable<ModInfo> mods)
+            {
+                foreach (var mod in mods)
+                {
+                    GUILayout.BeginVertical(UI.ModCategoryStyles.ModCardStyle);
+                    GUILayout.Label($"<color=#b3b3b3ff>{mod.Name}</color> <size=12><color=#888888ff>v{mod.Version}</color></size>", UI.ModCategoryStyles.ModNameStyle);
+                    GUILayout.Label($"by {mod.OriginalAuthor} & {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
+                    GUILayout.Label(mod.Description, UI.ModCategoryStyles.ModDescriptionStyle);
+
+                    // Enable/disable toggle in menu
+                    bool prev = _modEnabledStates.TryGetValue(mod.Name, out var enabled) ? enabled : false;
+                    bool next = GUILayout.Toggle(prev, prev ? "Enabled" : "Disabled");
+                    if (next != prev)
+                    {
+                        _modEnabledStates[mod.Name] = next;
+                        if (_modFactories.TryGetValue(mod.Name, out var factory))
+                        {
+                            var instance = factory();
+                            var initMethod = instance.GetType().GetMethod("Init");
+                            var disableMethod = instance.GetType().GetMethod("Disable");
+                            if (next && initMethod != null) initMethod.Invoke(instance, null);
+                            if (!next && disableMethod != null) disableMethod.Invoke(instance, null);
+                        }
+                    }
+
+                    // Show status
+                    GUILayout.Label(next ? "<color=green>Enabled</color>" : "<color=red>Disabled</color>");
+
+                    // Show mod settings if enabled
+                    object modInstance = null;
+                    if (_modFactories.TryGetValue(mod.Name, out var modFactory))
+                    {
+                        modInstance = modFactory();
+                    }
+                    if (next && mod.Settings != null)
+                    {
+                        foreach (var setting in mod.Settings)
+                        {
+                            if (setting.Type == "float")
+                            {
+                                float val = _modFloatSettings.TryGetValue($"{mod.Name}_{setting.Key}", out var f) ? f : setting.DefaultFloat;
+                                GUILayout.BeginHorizontal();
+                                GUILayout.Label(setting.Label, GUILayout.Width(200));
+                                float newVal = GUILayout.HorizontalSlider(val, setting.Min, setting.Max, GUILayout.Width(120));
+                                if (Math.Abs(newVal - val) > 0.01f)
+                                {
+                                    _modFloatSettings[$"{mod.Name}_{setting.Key}"] = newVal;
+                                    val = newVal;
+                                    // Notify mod of setting change
+                                    modInstance?.GetType().GetMethod("UpdateSettings")?.Invoke(modInstance, null);
+                                }
+                                GUILayout.Label($"{val:F1}", GUILayout.Width(60));
+                                GUILayout.EndHorizontal();
+                            }
+                            else if (setting.Type == "string")
+                            {
+                                string sval = _modStringSettings.TryGetValue($"{mod.Name}_{setting.Key}", out var s) ? s : setting.DefaultString;
+                                GUILayout.BeginHorizontal();
+                                GUILayout.Label(setting.Label, GUILayout.Width(200));
+                                string newSval = GUILayout.TextField(sval, GUILayout.Width(200));
+                                if (newSval != sval)
+                                {
+                                    _modStringSettings[$"{mod.Name}_{setting.Key}"] = newSval;
+                                    // Notify mod of setting change
+                                    modInstance?.GetType().GetMethod("UpdateSettings")?.Invoke(modInstance, null);
+                                }
+                                GUILayout.EndHorizontal();
+                            }
+                        }
+                    }
+                    // Legacy hardcoded settings for backward compatibility
+                    if (next)
+                    {
+                        if (mod.Name == "RestlessGirls" && (mod.Settings == null || !mod.Settings.Any(s => s.Key == "resttime")))
+                        {
+                            float restTime = _modFloatSettings.TryGetValue("restlessgirls_resttime", out var f) ? f : 5f;
+                            GUILayout.BeginHorizontal();
+                            GUILayout.Label("Rest Time:", GUILayout.Width(100));
+                            float newVal = GUILayout.HorizontalSlider(restTime, 1f, 64f, GUILayout.Width(120));
+                            if (Math.Abs(newVal - restTime) > 0.01f)
+                            {
+                                _modFloatSettings["restlessgirls_resttime"] = newVal;
+                                restTime = newVal;
+                            }
+                            GUILayout.Label($"{restTime:F1} sec", GUILayout.Width(60));
+                            GUILayout.EndHorizontal();
+                        }
+                        if (mod.Name == "CureSTD" && (mod.Settings == null || !mod.Settings.Any(s => s.Key == "exclude_phrases")))
+                        {
+                            string excludeCsv = _modStringSettings.TryGetValue("curestd_exclude_phrases", out var s) ? s : "sickly";
+                            GUILayout.BeginHorizontal();
+                            GUILayout.Label("Exclude Phrases (comma separated):", GUILayout.Width(200));
+                            string newCsv = GUILayout.TextField(excludeCsv, GUILayout.Width(200));
+                            if (newCsv != excludeCsv)
+                            {
+                                _modStringSettings["curestd_exclude_phrases"] = newCsv;
+                            }
+                            GUILayout.EndHorizontal();
+                        }
+                    }
+                    GUILayout.EndVertical();
+                    GUILayout.Space(4);
+                }
+            }
 
             mbm_all_in_one.src.modules.utils.UIUtils.DrawSection("Stable Mods:", stableLabelStyle, () => {
-                foreach (var mod in _stableMods)
-                {
-                    GUILayout.BeginVertical(UI.ModCategoryStyles.ModCardStyle);
-                    GUILayout.Label($"<color=#b3b3b3ff>{mod.Name}</color> <size=12><color=#888888ff>v{mod.Version}</color></size>", UI.ModCategoryStyles.ModNameStyle);
-                    GUILayout.Label($"by {mod.OriginalAuthor} & {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
-                    GUILayout.Label(mod.Description, UI.ModCategoryStyles.ModDescriptionStyle);
-                    GUILayout.EndVertical();
-                    GUILayout.Space(4);
+                if (_stableMods.Count > 0) {
+                    _stableModsScroll = GUILayout.BeginScrollView(_stableModsScroll, GUILayout.Height(300));
+                    DrawModList(_stableMods);
+                    GUILayout.EndScrollView();
                 }
             });
-
             GUILayout.Space(10);
-
             mbm_all_in_one.src.modules.utils.UIUtils.DrawSection("Experimental Mods:", experimentalLabelStyle, () => {
-                foreach (var mod in _experimentalMods)
-                {
-                    GUILayout.BeginVertical(UI.ModCategoryStyles.ModCardStyle);
-                    GUILayout.Label($"<color=#b3b3b3ff>{mod.Name}</color> <size=12><color=#888888ff>v{mod.Version}</color></size>", UI.ModCategoryStyles.ModNameStyle);
-                    GUILayout.Label($"by {mod.OriginalAuthor} & {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
-                    GUILayout.Label(mod.Description, UI.ModCategoryStyles.ModDescriptionStyle);
-                    GUILayout.EndVertical();
-                    GUILayout.Space(4);
+                if (_experimentalMods.Count > 0) {
+                    _experimentalModsScroll = GUILayout.BeginScrollView(_experimentalModsScroll, GUILayout.Height(300));
+                    DrawModList(_experimentalMods);
+                    GUILayout.EndScrollView();
                 }
             });
-
             GUILayout.Space(10);
-
             mbm_all_in_one.src.modules.utils.UIUtils.DrawSection("Broken Mods:", brokenLabelStyle, () => {
-                foreach (var mod in _brokenMods)
+                if (_brokenMods.Count > 0)
                 {
-                    GUILayout.BeginVertical(UI.ModCategoryStyles.ModCardStyle);
-                    GUILayout.Label($"<color=#b3b3b3ff>{mod.Name}</color> <size=12><color=#888888ff>v{mod.Version}</color></size>", UI.ModCategoryStyles.ModNameStyle);
-                    GUILayout.Label($"by {mod.OriginalAuthor} & {mod.Author}", UI.ModCategoryStyles.ModAuthorStyle);
-                    GUILayout.Label(mod.Description, UI.ModCategoryStyles.ModDescriptionStyle);
-                    GUILayout.EndVertical();
-                    GUILayout.Space(4);
+                    _brokenModsScroll = GUILayout.BeginScrollView(_brokenModsScroll, GUILayout.Height(300));
+                    DrawModList(_brokenMods);
+                    GUILayout.EndScrollView();
                 }
             });
-
-            GUILayout.EndVertical();
-
             GUILayout.EndVertical();
         }
     }

@@ -1,4 +1,3 @@
-using BepInEx.Configuration;
 using MBMScripts;
 
 namespace mbm_all_in_one.src.modules.mods.RestlessGirls
@@ -8,11 +7,11 @@ namespace mbm_all_in_one.src.modules.mods.RestlessGirls
     /// </summary>
     public class RestlessGirlsService
     {
-        private readonly ConfigEntry<float> _restTime;
-        private readonly ConfigEntry<bool> _enabled;
+        private readonly float _restTime;
+        private readonly bool _enabled;
         private readonly float _backup;
 
-        public RestlessGirlsService(ConfigEntry<float> restTime, ConfigEntry<bool> enabled, float backup)
+        public RestlessGirlsService(float restTime, bool enabled, float backup)
         {
             _restTime = restTime;
             _enabled = enabled;
@@ -21,8 +20,8 @@ namespace mbm_all_in_one.src.modules.mods.RestlessGirls
 
         public float GetRestTime()
         {
-            if (_restTime != null && _restTime.Value > 0f && _enabled != null && _enabled.Value)
-                return _restTime.Value;
+            if (_restTime > 0f && _enabled)
+                return _restTime;
             return _backup;
         }
     }
